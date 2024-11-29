@@ -15,7 +15,7 @@ dependencies = [
 ]
 [[project.authors]]
 name = "Itay Verkh"
-email = "iverkh@lightricks.com"
+email = "itay1542@gmail.com"
 
 [build-system]
 requires = [ "hatchling",]
