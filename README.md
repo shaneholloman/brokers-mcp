@@ -2,31 +2,34 @@
 
 A Model Context Protocol server implementing popular broker api's
 
+## Supported APIs
+
+- Currently only TradeStation API is supported (partially)
+
 ## Components
-
-### Resources
-
-The server implements a simple note storage system with:
-- Custom note:// URI scheme for accessing individual notes
-- Each note resource has a name, description and text/plain mimetype
-
-### Prompts
-
-The server provides a single prompt:
-- summarize-notes: Creates summaries of all stored notes
-  - Optional "style" argument to control detail level (brief/detailed)
-  - Generates prompt combining all current notes with style preference
 
 ### Tools
 
-The server implements one tool:
-- add-note: Adds a new note to the server
-  - Takes "name" and "content" as required string arguments
-  - Updates server state and notifies clients of resource changes
+The server implements five tools that are based on TradeStation API:
+1. tradestation_get_bars - wraps the output of [TradeStation GetBars](https://api.tradestation.com/docs/specification#tag/MarketData/operation/GetBars) in a dataframe and returns it's `__str__`
+2. tradestation_place_buy_order - Same as [TradeStation PlaceOrder](https://api.tradestation.com/docs/specification#tag/Order-Execution/operation/PlaceOrder) but only for buy orders
+3. tradestation_place_sell_order - Same as [TradeStation PlaceOrder](https://api.tradestation.com/docs/specification#tag/Order-Execution/operation/PlaceOrder) but only for sell orders
+4. tradestation_get_positions - Same as [TradeStation GetPositions](https://api.tradestation.com/docs/specification/#tag/Brokerage/operation/GetPositions)
+5. tradestation_get_balances - Same as [TradeStation GetBalances](https://api.tradestation.com/docs/specification/#tag/Brokerage/operation/GetBalances)
 
+see the exact schemas in the definition file [here](./portfolio_service/brokers/tradestation/tools.py)
 ## Configuration
 
-[TODO: Add configuration details specific to your implementation]
+The server is configured via environment variables:
+
+```bash 
+TRADESTATION_API_KEY="your_api_key"
+TRADESTATION_API_SECRET="your_api_secret"
+TS_REFRESH_TOKEN="your_refresh_token"
+TS_ACCOUNT_ID="your_account_id"
+```
+If you are unsure about how to get the values of the environment variables, 
+I have a blog post that explains it [here](https://medium.com/@itay1542/how-to-get-free-historical-intraday-equity-prices-with-code-examples-8f36fc57e1aa)
 
 ## Quickstart
 
@@ -35,65 +38,32 @@ The server implements one tool:
 #### Claude Desktop
 
 On MacOS: `~/Library/Application\ Support/Claude/claude_desktop_config.json`
+
 On Windows: `%APPDATA%/Claude/claude_desktop_config.json`
 
-<details>
-  <summary>Development/Unpublished Servers Configuration</summary>
-  ```
-  "mcpServers": {
-    "portfolio_service": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "/Users/iverkh/projects/portfolio_service",
-        "run",
-        "portfolio_service"
-      ]
-    }
+```
+"mcpServers": {
+  "portfolio_service": {
+    "command": "uv",
+    "args": [
+      "--directory",
+      "<path_to_project>/portfolio_service",
+      "run",
+      "portfolio_service"
+    ]
   }
-  ```
-</details>
-
-<details>
-  <summary>Published Servers Configuration</summary>
-  ```
-  "mcpServers": {
-    "portfolio_service": {
-      "command": "uvx",
-      "args": [
-        "portfolio_service"
-      ]
-    }
-  }
-  ```
-</details>
+}
+```
 
 ## Development
 
 ### Building and Publishing
 
-To prepare the package for distribution:
 
 1. Sync dependencies and update lockfile:
 ```bash
 uv sync
 ```
-
-2. Build package distributions:
-```bash
-uv build
-```
-
-This will create source and wheel distributions in the `dist/` directory.
-
-3. Publish to PyPI:
-```bash
-uv publish
-```
-
-Note: You'll need to set PyPI credentials via environment variables or command flags:
-- Token: `--token` or `UV_PUBLISH_TOKEN`
-- Or username/password: `--username`/`UV_PUBLISH_USERNAME` and `--password`/`UV_PUBLISH_PASSWORD`
 
 ### Debugging
 
@@ -104,7 +74,7 @@ experience, we strongly recommend using the [MCP Inspector](https://github.com/m
 You can launch the MCP Inspector via [`npm`](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) with this command:
 
 ```bash
-npx @modelcontextprotocol/inspector uv --directory /Users/iverkh/projects/portfolio_service run portfolio-service
+npx @modelcontextprotocol/inspector uv --directory <path_to_project>/portfolio_service run portfolio-service
 ```
 
 
