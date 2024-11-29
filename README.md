@@ -4,7 +4,7 @@ A Model Context Protocol server implementing popular broker api's
 
 ## Supported APIs
 
-- Currently only TradeStation API is supported (partially)
+- Currently only TradeStation API is supported *(partially)*
 
 ## Components
 
