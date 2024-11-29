@@ -10,7 +10,7 @@ from pydantic import AnyUrl
 from .brokers import tradestation
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("portfolio-server")
+logger = logging.getLogger("portfolio-service")
 
 
 def main():
