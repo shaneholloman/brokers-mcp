@@ -8,8 +8,6 @@ from ..common import BrokerTools
 
 tradestation_tools_prefix = "tradestation"
 
-# todo: implement more sophisticated tools that allow generating bars as images, adding indicators, scanning for stocks per criteria, etc..
-
 async def call_tool(name: str, arguments: dict):
     if name == f"{tradestation_tools_prefix}_get_bars":
         bars_df = await tradestation.get_bars(

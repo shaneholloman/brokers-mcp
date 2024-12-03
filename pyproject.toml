@@ -6,12 +6,15 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
  "aiohttp>=3.11.8",
+ "ib-insync>=0.9.86",
  "mcp>=1.0.0",
+ "nest-asyncio>=1.6.0",
  "pandas>=2.2.3",
  "pydantic>=2.10.2",
  "python-dotenv>=1.0.1",
  "requests>=2.32.3",
  "retry>=0.9.2",
+ "tradingview-screener>=2.5.0",
 ]
 [[project.authors]]
 name = "Itay Verkh"
@@ -22,4 +25,4 @@ requires = [ "hatchling",]
 build-backend = "hatchling.build"
 
 [project.scripts]
-portfolio-service = "portfolio_service.server:main"
+portfolio-service = "portfolio_service:main"

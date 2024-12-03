@@ -4,7 +4,6 @@ import json
 import logging
 import os
 
-from aiohttp.payload import Order
 from dotenv import load_dotenv
 
 from ..common import is_market_open
