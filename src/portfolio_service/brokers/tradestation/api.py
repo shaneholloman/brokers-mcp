@@ -517,7 +517,6 @@ class TradestationAPI(metaclass=Singleton):
     async def get_balances(self):
         endpoint = f"{self.api_url}/brokerage/accounts/{self._account_id}/balances"
         response = await self._request_endpoint(endpoint)
-        logger.error(response)
         return response["Balances"]
 
 tradestation = TradestationAPI()

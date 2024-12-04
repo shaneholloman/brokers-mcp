@@ -1,6 +1,7 @@
 import dataclasses
 import json
 from datetime import datetime
+from numbers import Number
 from typing import Callable, Any
 
 from ib_insync import util
@@ -38,7 +39,7 @@ def unpack(obj):
     else:
         return obj
 
-def list_items(items):
+def list_items(items, remove_falsy_values=False):
     list_ = []
     for item in items:
         if util.isnamedtupleinstance(item):
@@ -47,4 +48,22 @@ def list_items(items):
             list_.append(dataclasses.asdict(item))
         else:
             list_.append(item)
+
+    if remove_falsy_values:
+        list_ = _remove_falsy_values(list_)
+
     return json.dumps(list_, indent=2, default=str)
+
+def _remove_falsy_values(item):
+    if isinstance(item, dict):
+        return {k: _remove_falsy_values(v) for k, v in item.items() if is_truthy(v)}
+    elif isinstance(item, list):
+        return [_remove_falsy_values(v) for v in item if is_truthy(v)]
+    else:
+        return item
+
+def is_truthy(item):
+    if isinstance(item, Number):
+        return item > 0 and item < 1e100
+    else:
+        return bool(item)

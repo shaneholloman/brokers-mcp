@@ -1,11 +1,15 @@
+import json
 from datetime import datetime, timedelta
+from logging import getLogger
 
-from ib_insync import Stock
+from ib_insync import Stock, Trade
 from mcp import Resource
 from pydantic import AnyUrl
 
 from .client import ib
 from ..common import BrokerResources, list_items
+
+logger = getLogger(__name__)
 
 ib_host = "ibkr"
 
@@ -50,11 +54,13 @@ async def handle_resource_call(uri: AnyUrl) -> str:
                 'PreviousDayEquityWithLoanValue,GrossPositionValue').split(',')
         account_values = ib.accountSummary()
         filtered = {value.tag: value.value for value in account_values if value.tag in tags}
-        return list_items(filtered)
+        return json.dumps(filtered, indent=2, default=str)
     elif uri.path == "/all_orders":
-        return "#### ALL SESSION TRADES ####\n"+ list_items(ib.trades())
+        all_orders = ib.trades()
+        filled_and_open_orders = [order for order in all_orders if not order.orderStatus.status == "Cancelled"]
+        return "#### ALL SESSION TRADES ####\n"+ list_items(filled_and_open_orders, remove_falsy_values=True)
     elif uri.path == "/open_orders":
-        return "#### SESSION OPEN TRADES ####\n"+list_items(ib.openTrades())
+        return "#### SESSION OPEN TRADES ####\n"+list_items(ib.openTrades(), remove_falsy_values=True)
     else:
         raise ValueError(f"Unknown resource path: {uri.path}")
 

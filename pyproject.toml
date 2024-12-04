@@ -8,13 +8,17 @@ dependencies = [
  "aiohttp>=3.11.8",
  "ib-insync>=0.9.86",
  "mcp>=1.0.0",
+ "mplfinance>=0.12.10b0",
  "nest-asyncio>=1.6.0",
+ "pandas-ta>=0.3.14b0",
  "pandas>=2.2.3",
  "pydantic>=2.10.2",
  "python-dotenv>=1.0.1",
  "requests>=2.32.3",
  "retry>=0.9.2",
+ "numpy<2.0.0",
  "tradingview-screener>=2.5.0",
+ "setuptools>=75.6.0",
 ]
 [[project.authors]]
 name = "Itay Verkh"

@@ -9,12 +9,11 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 
 from pydantic import AnyUrl
-
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("portfolio-service")
 from .brokers import tradestation, ibkr
 from .tradingview import scanner
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("portfolio-service")
 
 
 server = Server("portfolio-service")
@@ -22,14 +21,14 @@ server = Server("portfolio-service")
 @server.list_resources()
 async def list_all_resources() -> list[Resource]:
     return [
-        *tradestation.resources.resources,
+        # *tradestation.resources.resources,
         *ibkr.resources.resources,
     ]
 
 @server.list_tools()
 async def list_all_tools() -> list[Tool]:
     return [
-        *tradestation.tools.tools,
+        # *tradestation.tools.tools,
         *ibkr.tools.tools,
         *scanner.tools,
     ]

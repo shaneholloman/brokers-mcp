@@ -43,7 +43,6 @@ async def handler(name, arguments):
     if name == f"{ibkr_tool_prefix}_get_news_headlines":
         stock = Stock(arguments["symbol"], "SMART", "USD")
         stock = (await qualify_contracts(stock))[0]
-        logger.error(f"ConId for {stock.symbol}: {stock.conId}")
         news = await ib.reqHistoricalNewsAsync(
             stock.conId,
             providerCodes="BRFG+BRFUPDN+DJ-N+DJ-RT+DJ-RTA+DJ-RTE+DJ-RTG+DJNL",
