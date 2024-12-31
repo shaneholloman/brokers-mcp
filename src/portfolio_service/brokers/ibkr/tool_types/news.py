@@ -9,7 +9,7 @@ from mcp.types import TextContent
 from ..client import ib
 from ..common import ibkr_tool_prefix
 from ..global_state import qualify_contracts
-from ...common import list_items
+from ...common import list_items, datetime_to_time_ago
 
 logger = getLogger(__name__)
 
@@ -32,9 +32,10 @@ tools = [
         inputSchema={
             "type": "object",
             "properties": {
-                "article_id": {"type": "number", "description": "The id of the article to fetch"},
+                "article_id": {"type": "number", "description": "The id of the article to fetch. in snake_case"},
+                "provider_code": {"type": "string", "description": "The provider code of the article to fetch, in snake_case"},
             },
-            "required": ["article_id"]
+            "required": ["article_id", "provider_code"]
         }
     ),
 ]
@@ -50,10 +51,16 @@ async def handler(name, arguments):
             endDateTime=datetime.now(pytz.timezone("US/Eastern")),
             totalResults=50
         )
+        edited = []
+        # convert news timestamp to "how long ago"
+        for news_item in news:
+            time_ago_string = datetime_to_time_ago(news_item.time)
+            edited.append(news_item._replace(time = time_ago_string))
+
         return [
             TextContent(
                 type="text",
-                text=list_items(news)
+                text=list_items(edited)
             )
         ]
     elif name == f"{ibkr_tool_prefix}_get_news_article":
@@ -61,7 +68,8 @@ async def handler(name, arguments):
             TextContent(
                 type="text",
                 text=str(await ib.reqNewsArticleAsync(
-                    article_id=arguments["article_id"]
+                    arguments["provider_code"],
+                    arguments["article_id"]
                 ))
             )
         ]

@@ -388,7 +388,8 @@ class TradestationAPI(metaclass=Singleton):
         unit: str,
         barsback: Optional[int] = None,
         firstdate: Optional[str] = None,
-        lastdate: Optional[str] = None
+        lastdate: Optional[str] = None,
+        extended_hours: bool = False
     ):
         endpoint = f"{self.api_url}/marketdata/barcharts/{symbol}"
         params = {
@@ -403,6 +404,8 @@ class TradestationAPI(metaclass=Singleton):
             params['firstdate'] = firstdate
         if lastdate:
             params['lastdate'] = lastdate
+        if extended_hours:
+            params['sessiontemplate'] = 'USEQPreAndPost'
 
         bars = await self._request_endpoint(endpoint, params=params)
         return df_from_bars(bars["Bars"])

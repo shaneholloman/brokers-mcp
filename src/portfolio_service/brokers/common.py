@@ -1,6 +1,6 @@
 import dataclasses
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from numbers import Number
 from typing import Callable, Any
 
@@ -11,7 +11,6 @@ from pytz import timezone
 
 
 class BrokerResources(BaseModel):
-    host: str
     resources: list[Resource]
     handler: Callable[[AnyUrl], Any]
 
@@ -67,3 +66,13 @@ def is_truthy(item):
         return item > 0 and item < 1e100
     else:
         return bool(item)
+
+def datetime_to_time_ago(timestamp: datetime) -> str:
+    time_diff = datetime.now(tz=None) - timestamp
+    if time_diff < timedelta(minutes=10):
+        time_ago_string = "just now"
+    elif time_diff < timedelta(days=1):
+        time_ago_string = f"{time_diff.seconds // 3600} hours ago"
+    else:
+        time_ago_string = f"{time_diff.days} day{'s' if time_diff.days > 1 else ''} ago"
+    return time_ago_string

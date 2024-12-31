@@ -12,11 +12,16 @@ class ContractCache(dict):
         self.contracts = {}
         self.ib_client = ib_client
 
-    async def get(self, contract: Contract) -> Contract:
+    async def get(self, contract: Contract) -> Contract | None:
         if contract.conId in self.contracts:
             return self.contracts[contract.conId]
         else:
-            self.contracts[contract.conId] = (await self.ib_client.qualifyContractsAsync(contract))[0]
+            contract = await self.ib_client.qualifyContractsAsync(contract) # invalid contract (could happen if strike doesn't exist)
+            if not contract:
+                return None
+
+            contract = contract[0]
+            self.contracts[contract.conId] = contract
             return self.contracts[contract.conId]
 
 cache = ContractCache(ib)

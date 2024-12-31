@@ -88,11 +88,14 @@ async def handler(name, arguments):
                 strike,
                 right,
                 'SMART',
+                "100",
+                'USD'
             )
             for strike in strikes
             for right in rights
         ]
         contracts = await qualify_contracts(*contracts)
+        contracts = [c for c in contracts if c] # remove invalid contracts
         tickers = await ib.reqTickersAsync(*contracts)
         retries = 0
         while not all([ticker.modelGreeks and ticker.modelGreeks.delta for ticker in tickers]) and retries < 8:
@@ -127,4 +130,4 @@ async def handler(name, arguments):
         raise ValueError(f"Unknown tool: {name}")
 
 if __name__ == "__main__":
-    asyncio.run(handler(f"{ibkr_tool_prefix}_read_option_chain", {"symbol": "AAPL", "expiration": "20241220", "strike_distance": 20}))
+    asyncio.run(handler(f"{ibkr_tool_prefix}_read_option_chain", {"symbol": "NVDA", "expiration": "20241220", "strike_distance": 20}))
