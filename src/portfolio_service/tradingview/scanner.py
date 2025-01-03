@@ -4,6 +4,7 @@ from urllib.error import HTTPError
 
 import tradingview_screener.constants
 from tradingview_screener import *
+from .async_screener import Query, Scanner
 from mcp import McpError
 from mcp.types import Tool, TextContent
 
@@ -73,6 +74,18 @@ Some of the operations that you can do with `Column` objects:
 >>> Column('type').isin(['stock', 'fund'])
 >>> Column('description').like('apple')  # the same as `description LIKE '%apple%'`
 
+The things you **can't** do with `Column` objects:
+- You can't use python arithmetic operations like `+`, `-`, `*`, `/` with `Column` objects.
+That means you **CANNOT** do something like this:
+```python
+Column('close') + 5 # will not work
+# or
+Column('close') * Column('volume') # will not work
+# or
+Column('close') * 2 # will not work
+```
+                                             
+
 This tool is useful both for scanning for symbols based on criteria, and for fundamental research on stocks.
 For example, to get the last year's eps and revenue of NVDA and AMZN, you can do:
 
@@ -139,13 +152,12 @@ async def tool_handler(name: str, arguments: dict):
         try:
             query_object = eval(query)
             try:
-                result = query_object.get_scanner_data()[1]
+                result = (await query_object.async_get_scanner_data())[1]
                 return [
                     TextContent(type="text", text=str(result))
                 ]
             except HTTPError as err:
-                logger.error(f"Error while executing query: {err}")
-                if "unknown field" in err.msg.lower():
+                if "unknown field" in err.message.lower():
                     return [
                         TextContent(
                             type="text",
@@ -157,17 +169,15 @@ async def tool_handler(name: str, arguments: dict):
                     raise McpError(f"Error while executing query: {err}")
 
         except Exception as e:
-            logger.error("Error while executing query: "+ repr(e))
             raise McpError("Error while executing query: "+ repr(e))
     elif name == f"{trading_view_name_prefix}_scan_from_scanner":
         list_name = arguments["list_name"]
         try:
-            result = getattr(tradingview_screener.Scanner, list_name).get_scanner_data()[1]
+            result = (await getattr(Scanner, list_name).async_get_scanner_data())[1]
             return [
                 TextContent(type="text", text=str(result))
             ]
         except Exception as e:
-            logger.error("Error while executing query: "+ repr(e))
             raise McpError("Error while executing query: "+ repr(e))
     elif name == f"{trading_view_name_prefix}_search_available_columns":
         query = arguments.get("query", "")

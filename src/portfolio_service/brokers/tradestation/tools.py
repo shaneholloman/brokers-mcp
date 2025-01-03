@@ -1,7 +1,8 @@
 import base64
 import io
 import json
-
+import matplotlib
+matplotlib.use("Agg")
 import pandas as pd
 import pandas_ta
 from matplotlib import pyplot as plt
@@ -19,7 +20,8 @@ SUPPORTED_INDICATORS = [
     "ema_{period}",
     "rsi_{window_period}",
     "macd_{fast_period}_{slow_period}_{signal_period}",
-    "vwap"
+    "vwap",
+    "bbands_{window_period}_{num_std}",
 ]
 
 get_bars_input_schema = {
@@ -81,6 +83,12 @@ def add_indicators_to_bars_df(bars: pd.DataFrame, indicators: list[str]):
             bars[f"macd_histogram_{fast_period}_{slow_period}_{signal_period}"] = macd.iloc[:, 1]
         elif indicator == "vwap":
             bars["vwap"] = pandas_ta.vwap(bars["high"], bars["low"], bars["close"], bars["volume"])
+        elif indicator.startswith("bbands_"):
+            window_period, num_std = map(int, indicator.split("_")[1:])
+            bbands = pandas_ta.bbands(bars["close"], window_period, num_std)
+            bars[f"bbands_{window_period}_{num_std}_upper"] = bbands.iloc[:, 0]
+            bars[f"bbands_{window_period}_{num_std}_mid"] = bbands.iloc[:, 1]
+            bars[f"bbands_{window_period}_{num_std}_lower"] = bbands.iloc[:, 2]
         else:
             raise ValueError(f"Unknown indicator: {indicator}")
 
@@ -180,6 +188,28 @@ def plot_bars(bars: pd.DataFrame):
             ))
             panel_ratios.append(1)  # Adjust panel ratio for MACD
             panel_num += 1
+
+    # BBands Indicator
+    bbands_base = [col for col in bars.columns if col.startswith('bbands_') and not col.endswith('mid')]
+    for bbands_col in bbands_base:
+        # Extract BBands parameters from the column name (e.g., 'bbands_20_2')
+        params = bbands_col.split('_')[1:-1]
+        mid_col = f'bbands_' + '_'.join(params) + '_mid'
+        if mid_col in bars.columns:
+            data = pd.DataFrame({
+                'upper': bars[bbands_col],
+                'mid': bars[mid_col],
+                'lower': bars[bbands_col]
+            }, index=bars.index)
+
+            # Add BBands lines
+            add_plots.append(mpf.make_addplot(
+                data[['upper', 'mid', 'lower']],
+                panel=0,
+                color='grey',
+                linestyle='dashed',
+                width=0.5
+            ))
 
     fig, axes = mpf.plot(
         bars,

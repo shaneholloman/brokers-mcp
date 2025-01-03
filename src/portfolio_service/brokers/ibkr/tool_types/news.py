@@ -32,8 +32,8 @@ tools = [
         inputSchema={
             "type": "object",
             "properties": {
-                "article_id": {"type": "number", "description": "The id of the article to fetch. in snake_case"},
-                "provider_code": {"type": "string", "description": "The provider code of the article to fetch, in snake_case"},
+                "article_id": {"type": "string", "description": "The id of the article to fetch."},
+                "provider_code": {"type": "string", "description": "The provider code of the article to fetch"},
             },
             "required": ["article_id", "provider_code"]
         }

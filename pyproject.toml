@@ -7,7 +7,7 @@ requires-python = ">=3.10"
 dependencies = [
  "aiohttp>=3.11.8",
  "ib-insync>=0.9.86",
- "mcp>=1.0.0",
+ "mcp[cli]>=1.0.0",
  "mplfinance>=0.12.10b0",
  "nest-asyncio>=1.6.0",
  "pandas-ta>=0.3.14b0",
@@ -19,6 +19,7 @@ dependencies = [
  "numpy<2.0.0",
  "tradingview-screener>=2.5.0",
  "setuptools>=75.6.0",
+ "yfinance>=0.2.51",
 ]
 [[project.authors]]
 name = "Itay Verkh"
