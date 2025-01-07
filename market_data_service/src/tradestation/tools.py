@@ -1,19 +1,15 @@
 import base64
 import io
-import json
+from typing import Optional, Annotated
 import matplotlib
 matplotlib.use("Agg")
 import pandas as pd
 import pandas_ta
 from matplotlib import pyplot as plt
-from mcp import Tool
-from mcp.types import TextContent, ImageContent
+from mcp.server.fastmcp import Image
 import mplfinance as mpf
 
-from .api import tradestation
-from ..common import BrokerTools
-
-tradestation_tools_prefix = "charts_and_prices"
+from src.tradestation.api import tradestation
 
 SUPPORTED_INDICATORS = [
     "sma_{period}",
@@ -24,47 +20,8 @@ SUPPORTED_INDICATORS = [
     "bbands_{window_period}_{num_std}",
 ]
 
-get_bars_input_schema = {
-    "type": "object",
-    "properties": {
-        "symbol": {"type": "string"},
-        "unit": {
-            "type": "string",
-            "description":"Unit of time for the bars. Possible values are Minute, Daily, Weekly, Monthly."
-        },
-        "interval": {
-            "type": "number",
-            "description":"Interval that each bar will consist of - for minute bars,"
-                          " the number of minutes aggregated in a single bar. For bar units other than minute,"
-                          " value must be 1. For unit Minute the max allowed Interval is 1440."
-        },
-        "bars_back": {
-            "type": "number",
-            "description":"Number of bars back to fetch (or retrieve)."
-                          " The maximum number of intraday bars back that a user can query is 57,600."
-                          " There is no limit on daily, weekly, or monthly bars."
-                          " This parameter is mutually exclusive with firstdate",
-        },
-        "firstdate": {
-            "type": "string",
-            "description":"Does not have a default value."
-                          " The first date formatted as YYYY-MM-DD OR YYYY-MM-DDTHH:mm:SSZ."
-                          " This parameter is mutually exclusive with barsback."
-        },
-        "lastdate": {
-            "type": "string",
-            "description":"Defaults to current timestamp. The last date formatted as YYYY-MM-DD,2020-04-20T18:00:00Z"
-        },
-        "extended_hours": {
-            "type": "boolean",
-            "description":"Defaults to False. If True, includes extended hours data.",
-            "default": False
-        }
-    },
-    "required": ["symbol", "interval", "unit"],
-}
-
 def add_indicators_to_bars_df(bars: pd.DataFrame, indicators: list[str]):
+    """Add technical indicators to the bars dataframe"""
     for indicator in indicators:
         if indicator.startswith("sma_"):
             period = int(indicator.split("_")[1])
@@ -95,10 +52,6 @@ def add_indicators_to_bars_df(bars: pd.DataFrame, indicators: list[str]):
 def plot_bars(bars: pd.DataFrame):
     """
     Plots a candlestick chart with volume, moving averages, RSI, and MACD if present in the DataFrame.
-
-    Args:
-        bars (pd.DataFrame): DataFrame containing OHLCV data with required columns:
-                             ['open', 'high', 'low', 'close', 'volume'] and a datetime index.
     """
     # Ensure the DataFrame index is a datetime index for mplfinance
     if not isinstance(bars.index, pd.DatetimeIndex):
@@ -232,76 +185,94 @@ def plot_bars(bars: pd.DataFrame):
     buf.seek(0)  # Seek to the beginning of the BytesIO buffer
     return buf
 
-async def call_tool(name: str, arguments: dict):
-    if name == f"{tradestation_tools_prefix}_get_bars":
-        bars_df = await tradestation.get_bars(
-            symbol=arguments["symbol"],
-            unit=arguments["unit"],
-            interval=arguments["interval"],
-            barsback=arguments.get("bars_back"),
-            firstdate=arguments.get("firstdate"),
-            lastdate=arguments.get("lastdate"),
-            extended_hours=arguments.get("extended_hours", False),
-        )
-        return [
-            TextContent(
-                type="text",
-                text=str(bars_df),
-            )
-        ]
-    elif name == f"{tradestation_tools_prefix}_plot_bars":
-        bars_df = await tradestation.get_bars(
-            symbol=arguments["symbol"],
-            unit=arguments["unit"],
-            interval=arguments["interval"],
-            barsback=arguments.get("bars_back"),
-            firstdate=arguments.get("firstdate"),
-            lastdate=arguments.get("lastdate"),
-            extended_hours=arguments.get("extended_hours", False),
-        )
-        indicators = arguments.get("indicators", "")
-        bars_df.set_index("datetime", inplace=True)
-        if indicators:
-            indicators = indicators.split(',')
-            add_indicators_to_bars_df(bars_df, indicators)
-        buf = plot_bars(bars_df)
-        return [
-            ImageContent(
-                type="image",
-                data=base64.b64encode(buf.read()).decode("utf-8"),
-                mimeType="image/png"
-            ),
-            TextContent(
-                type="text",
-                text=str(bars_df),
-            )
-        ]
-    else:
-        raise ValueError(f"Unknown tool name: {name}")
+async def get_bars(
+    symbol: str,
+    unit: str,
+    bar_size: int,
+    bars_back: Optional[int] = None,
+    firstdate: Optional[str] = None,
+    lastdate: Optional[str] = None,
+    extended_hours: bool = False
+) -> str:
+    """Get market data as OHLCV bars for a symbol
+    
+    Args:
+        symbol: The symbol to get bars for
+        unit: Unit of time for the bars. Possible values are Minute, Daily, Weekly, Monthly.
+        bar_size: Interval that each bar will consist of - for minute bars, the number of minutes 
+            aggregated in a single bar. For bar units other than minute, value must be 1. 
+            For unit Minute the max allowed Interval is 1440.
+        bars_back: Number of bars back to fetch. Max 57,600 for intraday. No limit for 
+            daily/weekly/monthly. Mutually exclusive with firstdate.
+        firstdate: The first date formatted as YYYY-MM-DD OR YYYY-MM-DDTHH:mm:SSZ. 
+            Mutually exclusive with bars_back.
+        lastdate: The last date formatted as YYYY-MM-DD,2020-04-20T18:00:00Z. 
+            Defaults to current timestamp.
+        extended_hours: If True, includes extended hours data.
+    
+    Returns:
+        str: DataFrame of OHLCV bars as string
+    """
+    bars_df = await tradestation.get_bars(
+        symbol=symbol,
+        unit=unit,
+        interval=bar_size,
+        barsback=bars_back,
+        firstdate=firstdate,
+        lastdate=lastdate,
+        extended_hours=extended_hours,
+    )
+    return str(bars_df)
 
-tools = BrokerTools(
-    name_prefix=tradestation_tools_prefix,
-    tools = [
-        Tool(
-            name=f"{tradestation_tools_prefix}_get_bars",
-            description="Get market data as ohlc bars for a symbol",
-            inputSchema=get_bars_input_schema
-        ),
-        Tool(
-            name=f"{tradestation_tools_prefix}_plot_bars",
-            description="Plot a candlestick chart with indicators (or no indicators)",
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    **get_bars_input_schema["properties"],
-                    "indicators": {
-                        "type": "string",
-                        "description": "Optional, A list of indicators to plot on the chart separated by ','. Supported indicators are: " + ','.join(SUPPORTED_INDICATORS),
-                    }
-                },
-                "required": ["symbol", "interval", "unit"]
-            }
-        )
-    ],
-    handler=call_tool
-)
+async def plot_bars_with_indicators(
+    symbol: str,
+    unit: str,
+    interval: int,
+    indicators: str = "",
+    bars_back: Optional[int] = None,
+    firstdate: Optional[str] = None,
+    lastdate: Optional[str] = None,
+    extended_hours: bool = False
+) -> tuple[Image, str]:
+    """Calculate bars with optional indicators and plot candlestick chart
+    
+    Args:
+        symbol: The symbol to plot
+        unit: Unit of time for the bars. Possible values are Minute, Daily, Weekly, Monthly.
+        interval: Interval that each bar will consist of - for minute bars, the number of minutes 
+            aggregated in a single bar.
+        indicators: Optional indicators to plot, comma-separated. Supported: {SUPPORTED_INDICATORS}
+        bars_back: Number of bars back to fetch. Max 57,600 for intraday. No limit for 
+            daily/weekly/monthly.
+        firstdate: The first date formatted as YYYY-MM-DD OR YYYY-MM-DDTHH:mm:SSZ.
+        lastdate: The last date formatted as YYYY-MM-DD,2020-04-20T18:00:00Z.
+        extended_hours: If True, includes extended hours data.
+    
+    Returns:
+        tuple[Image, str]: Tuple containing the chart image and DataFrame of bars as string
+    """
+    # Get the bars data
+    bars_df = await tradestation.get_bars(
+        symbol=symbol,
+        unit=unit,
+        interval=interval,
+        barsback=bars_back,
+        firstdate=firstdate,
+        lastdate=lastdate,
+        extended_hours=extended_hours,
+    )
+    
+    # Process indicators if provided
+    bars_df.set_index("datetime", inplace=True)
+    if indicators:
+        indicator_list = [i.strip() for i in indicators.split(',')]
+        add_indicators_to_bars_df(bars_df, indicator_list)
+    
+    # Generate the plot
+    buf = plot_bars(bars_df)
+    
+    # Return both the image and the data
+    return (
+        Image(data=buf.read(), format="png"),
+        str(bars_df)
+    )

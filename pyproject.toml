@@ -1,33 +1,22 @@
 [project]
-name = "portfolio-service"
+name = "fin-agents-servers"
 version = "0.1.0"
-description = "A Model Context Protocol server implementing popular broker api's"
-readme = "README.md"
+description = "A Model Context Protocol server providing market data"
 requires-python = ">=3.10"
-dependencies = [
- "aiohttp>=3.11.8",
- "ib-insync>=0.9.86",
- "mcp[cli]>=1.0.0",
- "mplfinance>=0.12.10b0",
- "nest-asyncio>=1.6.0",
- "pandas-ta>=0.3.14b0",
- "pandas>=2.2.3",
- "pydantic>=2.10.2",
- "python-dotenv>=1.0.1",
- "requests>=2.32.3",
- "retry>=0.9.2",
- "numpy<2.0.0",
- "tradingview-screener>=2.5.0",
- "setuptools>=75.6.0",
- "yfinance>=0.2.51",
-]
+dependencies = []
+
 [[project.authors]]
 name = "Itay Verkh"
 email = "itay1542@gmail.com"
 
-[build-system]
-requires = [ "hatchling",]
-build-backend = "hatchling.build"
+[tool.uv.workspace]
+members=[
+    "brokerage_service",
+    "market_data_service",
+    "research_service",
+]
 
-[project.scripts]
-portfolio-service = "portfolio_service:main"
+[tool.uv.sources]
+market_data_service = { workspace = true }
+research_service = { workspace = true }
+brokerage_service = { workspace = true }

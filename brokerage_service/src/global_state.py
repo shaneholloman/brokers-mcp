@@ -1,22 +1,21 @@
 import asyncio
 
+from src.client import get_ib
 from ib_insync import Contract, Stock
-
-from .client import ib
 
 orders = {}
 
 class ContractCache(dict):
-    def __init__(self, ib_client):
+    def __init__(self):
         super().__init__()
         self.contracts = {}
-        self.ib_client = ib_client
 
     async def get(self, contract: Contract) -> Contract | None:
+        ib = get_ib()
         if contract.conId in self.contracts:
             return self.contracts[contract.conId]
         else:
-            contract = await self.ib_client.qualifyContractsAsync(contract) # invalid contract (could happen if strike doesn't exist)
+            contract = await ib.qualifyContractsAsync(contract) # invalid contract (could happen if strike doesn't exist)
             if not contract:
                 return None
 
@@ -24,7 +23,7 @@ class ContractCache(dict):
             self.contracts[contract.conId] = contract
             return self.contracts[contract.conId]
 
-cache = ContractCache(ib)
+cache = ContractCache()
 
 async def qualify_contracts(*contracts: Contract) -> list[Contract]:
     return await asyncio.gather(*[cache.get(c) for c in contracts])

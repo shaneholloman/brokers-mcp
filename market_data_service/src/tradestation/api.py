@@ -6,7 +6,7 @@ import os
 
 from dotenv import load_dotenv
 
-from ..common import is_market_open
+from src.common import is_market_open
 
 load_dotenv()
 
@@ -523,6 +523,3 @@ class TradestationAPI(metaclass=Singleton):
         return response["Balances"]
 
 tradestation = TradestationAPI()
-
-if __name__ == "__main__":
-    print(asyncio.run(tradestation.open_position("AAPL", 2, 0, 0, "Limit", 150)))

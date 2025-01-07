@@ -5,6 +5,7 @@ build/
 dist/
 wheels/
 .idea/
+mcp_servers/
 *.egg-info
 
 # Virtual environments
