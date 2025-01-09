@@ -1,14 +1,10 @@
 from datetime import datetime, timedelta
-import os
-from typing import Annotated
 from logging import getLogger
 
-from ib_insync import IB
 import pytz
 
-from src.common import datetime_to_time_ago, list_items
-from src.ibkr.global_state import get_contract
-from src.ibkr import client as ib_client
+from common_lib.util import list_items, datetime_to_time_ago
+from common_lib.ib import get_ib, get_contract
 
 logger = getLogger(__name__)
 
@@ -25,7 +21,7 @@ async def get_news_headlines(
     Returns:
         str: List of news headlines
     """
-    ib = ib_client.get_ib()
+    ib = get_ib()
     stock = await get_contract(symbol, "stock")
     
     news = await ib.reqHistoricalNewsAsync(
@@ -57,7 +53,7 @@ async def get_news_article(
     Returns:
         str: The article body
     """
-    ib = ib_client.get_ib()
+    ib = get_ib()
     article = await ib.reqNewsArticleAsync(
         provider_code,
         article_id

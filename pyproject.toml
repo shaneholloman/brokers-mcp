@@ -14,9 +14,8 @@ members=[
     "brokerage_service",
     "market_data_service",
     "research_service",
+    "common",
 ]
 
 [tool.uv.sources]
-market_data_service = { workspace = true }
-research_service = { workspace = true }
-brokerage_service = { workspace = true }
+common = { workspace = true }

@@ -3,13 +3,7 @@ import datetime
 import json
 import logging
 import os
-
-from dotenv import load_dotenv
-
-from src.common import is_market_open
-
-load_dotenv()
-
+from common_lib.util import is_market_open
 import time
 from datetime import datetime
 from datetime import timedelta

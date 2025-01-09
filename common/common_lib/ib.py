@@ -1,9 +1,30 @@
+import os
+from ib_insync import IB
+import pytz
 import asyncio
-
-from src.client import get_ib
 from ib_insync import Contract, Stock
 
-orders = {}
+ib: IB | None = None
+
+def get_ib() -> IB:
+    if ib is None:
+        raise RuntimeError("IB client not initialized")
+    return ib
+
+def set_ib(client: IB):
+    global ib
+    ib = client
+
+def connect_ib():
+    client_id = os.getenv("IBKR_CLIENT_ID", 1)
+    host = os.getenv("IBKR_HOST", "127.0.0.1")
+    port = int(os.getenv("IBKR_PORT", "7496"))
+    account = os.getenv("IBKR_ACCOUNT")
+    ib = IB()
+    ib.TimezoneTWS = pytz.timezone("US/Eastern")
+    ib.connect(host, port, clientId=client_id, account=account, timeout=30)
+    set_ib(ib)
+    return ib
 
 class ContractCache(dict):
     def __init__(self):
@@ -37,5 +58,3 @@ async def get_contract(symbol: str, contract_type: str, currency: str = "USD") -
         raise ValueError(f"Unknown symbol type: {contract_type}")
     contracts = await qualify_contracts(contract)
     return contracts[0]
-
-news_providers: list[str] = []

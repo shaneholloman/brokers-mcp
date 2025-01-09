@@ -192,6 +192,7 @@ async def get_bars(
     bars_back: Optional[int] = None,
     firstdate: Optional[str] = None,
     lastdate: Optional[str] = None,
+    indicators: Optional[str] = None,
     extended_hours: bool = False
 ) -> str:
     """Get market data as OHLCV bars for a symbol
@@ -208,6 +209,7 @@ async def get_bars(
             Mutually exclusive with bars_back.
         lastdate: The last date formatted as YYYY-MM-DD,2020-04-20T18:00:00Z. 
             Defaults to current timestamp.
+        indicators: Optional indicators to plot, comma-separated. Supported: {SUPPORTED_INDICATORS}
         extended_hours: If True, includes extended hours data.
     
     Returns:
@@ -222,7 +224,11 @@ async def get_bars(
         lastdate=lastdate,
         extended_hours=extended_hours,
     )
-    return str(bars_df)
+    bars_df.set_index("datetime", inplace=True)
+    if indicators:
+        indicator_list = [i.strip() for i in indicators.split(',')]
+        add_indicators_to_bars_df(bars_df, indicator_list)
+    return bars_df.drop(columns=["date"]).to_json(orient="records", lines=True)
 
 async def plot_bars_with_indicators(
     symbol: str,
@@ -234,7 +240,8 @@ async def plot_bars_with_indicators(
     lastdate: Optional[str] = None,
     extended_hours: bool = False
 ) -> tuple[Image, str]:
-    """Calculate bars with optional indicators and plot candlestick chart
+    """Calculate bars with optional indicators and plot candlestick chart for better visualization and 
+    easier analysis.
     
     Args:
         symbol: The symbol to plot
@@ -274,5 +281,5 @@ async def plot_bars_with_indicators(
     # Return both the image and the data
     return (
         Image(data=buf.read(), format="png"),
-        str(bars_df)
+        bars_df.drop(columns=["date"]).to_json(orient="records", lines=True)
     )

@@ -1,35 +1,38 @@
 from logging import getLogger
 from urllib.error import HTTPError
 from mcp.server.fastmcp import FastMCP
-import tradingview_screener.constants
+import tradingview_screener
 from tradingview_screener import *
-from research_service.tradingview.async_screener import Query, Scanner
+from tradingview.async_screener import Query, Scanner
 
-from research_service.tradingview.column_values_index import index
-from research_service.tradingview.scanner import QUERY_LANGUAGE_DOCS
+
+from tradingview.column_values_index import index
+from tradingview.scanner import QUERY_LANGUAGE_DOCS
 
 logger = getLogger(__name__)
 
 mcp = FastMCP("Research Service")
 
-@mcp.tool()
+@mcp.tool(
+    name="scan_from_scanner",
+    description=f"""Use a scanner from the built-in scanner list.
+
+Args:
+    list_name: Name of the built-in scanner to use
+
+Returns:
+    str: Scanner results as a string
+
+Available lists: {tradingview_screener.Scanner.names()}"""
+)
 async def scan_from_scanner(list_name: str) -> str:
-    """Use a scanner from the built-in scanner list.
-
-    Args:
-        list_name: Name of the built-in scanner to use
-
-    Returns:
-        str: Scanner results as a string
-
-    Available lists: """ + str(tradingview_screener.Scanner.names())
     try:
         result = (await getattr(Scanner, list_name).async_get_scanner_data())[1]
         return str(result)
     except Exception as e:
         raise ValueError("Error while executing query: " + repr(e))
 
-@mcp.tool()
+@mcp.tool(name="search_available_columns")
 async def search_available_columns(query: str) -> str:
     """Search for columns that match the given query.
     For example: when query='Average', the tool will return all the columns that
@@ -51,17 +54,16 @@ async def search_available_columns(query: str) -> str:
         return str(matched_columns)
 
 
-@mcp.tool()
+@mcp.tool(
+    name="scan_for_stocks",
+    description=(
+        "Scan for stocks based on a query from the tradingview_screener library"
+        "Args: query: Query string in tradingview_screener format to filter stocks"
+        "Returns: str: Scanner results as a string"
+        f"{QUERY_LANGUAGE_DOCS}"
+    )
+)
 async def scan_for_stocks(query: str) -> str:
-    f"""Scan for stocks based on a query from the tradingview_screener library
-
-    Args:
-        query: Query string in tradingview_screener format to filter stocks
-
-    Returns:
-        str: Scanner results as a string
-
-{QUERY_LANGUAGE_DOCS}"""
     try:
         query_object = eval(query)
         try:
@@ -75,4 +77,7 @@ async def scan_for_stocks(query: str) -> str:
                 raise ValueError(f"Error while executing query: {err}")
     except Exception as e:
         raise ValueError("Error while executing query: " + repr(e))
+
+if __name__ == "__main__":
+    mcp.run(transport="sse")
     

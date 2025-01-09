@@ -1,9 +1,10 @@
 from logging import getLogger
 import json
 
-from src.client import get_ib
-from src.util import list_items, unpack
+from common_lib.ib import get_ib
 from mcp.server.fastmcp.resources import FunctionResource
+
+from common_lib.util import unpack
 
 logger = getLogger(__name__)
 
@@ -29,7 +30,7 @@ def get_account_summary() -> str:
             'PreviousDayEquityWithLoanValue,GrossPositionValue').split(',')
     account_values = ib.accountSummary()
     filtered = {value.tag: value.value for value in account_values if value.tag in tags}
-    return json.dumps(filtered, indent=2, default=str)
+    return json.dumps(filtered, default=str)
 
 account_summary_resource = FunctionResource(
     uri="account://account_summary",
@@ -43,7 +44,7 @@ def get_all_orders() -> str:
     ib = get_ib()
     all_orders = ib.trades()
     filled_and_open_orders = [order for order in all_orders if not order.orderStatus.status == "Cancelled"]
-    as_json = json.dumps(unpack(filled_and_open_orders), indent=2, default=str)
+    as_json = json.dumps(unpack(filled_and_open_orders), default=str)
     return as_json
 
 all_orders_resource = FunctionResource(
@@ -57,7 +58,7 @@ def get_open_orders() -> str:
     """Get all open orders in the account"""
     ib = get_ib()
     open_orders = ib.openOrders()
-    as_json = json.dumps(unpack(open_orders), indent=2, default=str)
+    as_json = json.dumps(unpack(open_orders), default=str)
     return as_json
 
 open_orders_resource = FunctionResource(
@@ -65,4 +66,21 @@ open_orders_resource = FunctionResource(
     name="Get all open orders in the account",
     description="Get all open orders in the account",
     fn=get_open_orders,
+)
+
+def get_orders_for_symbol(symbol: str) -> str:
+    """Get all orders for a specific symbol from the current session"""
+    ib = get_ib()
+    all_orders = ib.trades()
+    symbol_orders = [order for order in all_orders 
+                    if order.contract.symbol == symbol 
+                    and not order.orderStatus.status == "Cancelled"]
+    as_json = json.dumps(unpack(symbol_orders), default=str)
+    return as_json
+
+symbol_orders_resource = FunctionResource(
+    uri="brokerage://all_orders/{symbol}",
+    name="Get orders for a specific symbol",
+    description="Get all orders for a specific symbol from the current session", 
+    fn=get_orders_for_symbol,
 )
