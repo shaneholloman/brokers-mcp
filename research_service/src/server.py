@@ -3,11 +3,9 @@ from urllib.error import HTTPError
 from mcp.server.fastmcp import FastMCP
 import tradingview_screener
 from tradingview_screener import *
-from tradingview.async_screener import Query, Scanner
-
-
-from tradingview.column_values_index import index
-from tradingview.scanner import QUERY_LANGUAGE_DOCS
+from src.async_screener import Query, Scanner
+from src.column_values_index import index
+from src.scanner import QUERY_LANGUAGE_DOCS
 
 logger = getLogger(__name__)
 
