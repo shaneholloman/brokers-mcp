@@ -159,7 +159,7 @@ wheels = [
 [[package]]
 name = "brokerage-service"
 version = "0.1.0"
-source = { editable = "brokerage_service" }
+source = { virtual = "brokerage_service" }
 dependencies = [
     { name = "common" },
 ]
@@ -396,6 +396,12 @@ wheels = [
 name = "fin-agents-servers"
 version = "0.1.0"
 source = { virtual = "." }
+dependencies = [
+    { name = "common" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "common", editable = "common" }]
 
 [[package]]
 name = "fonttools"
@@ -677,7 +683,7 @@ wheels = [
 [[package]]
 name = "market-data-service"
 version = "0.1.0"
-source = { editable = "market_data_service" }
+source = { virtual = "market_data_service" }
 dependencies = [
     { name = "common" },
     { name = "mplfinance" },
@@ -1294,7 +1300,7 @@ wheels = [
 [[package]]
 name = "research-service"
 version = "0.1.0"
-source = { editable = "research_service" }
+source = { virtual = "research_service" }
 dependencies = [
     { name = "common" },
     { name = "tradingview-screener" },

@@ -9,9 +9,9 @@ load_dotenv()
 from common_lib.ib import connect_ib
 from common_lib.mcp import AsyncioFastMCP
 
-from src.tradestation.tools import SUPPORTED_INDICATORS, get_bars, plot_bars_with_indicators
-from src.ibkr.news import get_news_headlines, get_news_article
-from src.ibkr.options import get_option_expirations, read_option_chain
+from tradestation.tools import SUPPORTED_INDICATORS, get_bars, plot_bars_with_indicators
+from ibkr.news import get_news_headlines, get_news_article
+from ibkr.options import get_option_expirations, read_option_chain
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("market-data-service")

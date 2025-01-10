@@ -5,8 +5,8 @@ nest_asyncio.apply()
 from common_lib.ib import connect_ib
 from common_lib.mcp import AsyncioFastMCP
 
-from src.orders import place_new_order, cancel_order, modify_order
-from src.resources import (
+from orders import place_new_order, cancel_order, modify_order
+from resources import (
     account_summary_resource,
     all_orders_resource,
     open_orders_resource,

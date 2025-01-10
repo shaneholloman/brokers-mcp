@@ -23,18 +23,21 @@ async def get_news_headlines(
     """
     ib = get_ib()
     stock = await get_contract(symbol, "stock")
-    
+    start_date = datetime.now(tz=pytz.timezone("US/Eastern")) - timedelta(days=days_back)
+    end_date = datetime.now(tz=pytz.timezone("US/Eastern"))
     news = await ib.reqHistoricalNewsAsync(
         stock.conId,
         providerCodes="BRFG+BRFUPDN+DJ-N+DJ-RT+DJ-RTA+DJ-RTE+DJ-RTG+DJNL",
-        startDateTime=datetime.now(tz=pytz.timezone("US/Eastern")) - timedelta(days=days_back),
-        endDateTime=datetime.now(tz=pytz.timezone("US/Eastern")),
+        startDateTime=start_date,
+        endDateTime=end_date,
         totalResults=50
     )
     
     # Convert news timestamp to "how long ago"
     edited = []
     for news_item in news:
+        if news_item.time < start_date:
+            break
         time_ago_string = datetime_to_time_ago(news_item.time)
         edited.append(news_item._replace(time=time_ago_string))
 

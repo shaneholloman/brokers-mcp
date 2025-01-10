@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from mcp.server.fastmcp import Image
 import mplfinance as mpf
 
-from src.tradestation.api import tradestation
+from tradestation.api import tradestation
 
 SUPPORTED_INDICATORS = [
     "sma_{period}",
@@ -228,7 +228,7 @@ async def get_bars(
     if indicators:
         indicator_list = [i.strip() for i in indicators.split(',')]
         add_indicators_to_bars_df(bars_df, indicator_list)
-    return bars_df.drop(columns=["date"]).to_json(orient="records", lines=True)
+    return bars_df.drop(columns=["date"]).reset_index().to_json(orient="records", lines=True)
 
 async def plot_bars_with_indicators(
     symbol: str,
@@ -281,5 +281,5 @@ async def plot_bars_with_indicators(
     # Return both the image and the data
     return (
         Image(data=buf.read(), format="png"),
-        bars_df.drop(columns=["date"]).to_json(orient="records", lines=True)
+        bars_df.drop(columns=["date"]).reset_index().to_json(orient="records", lines=True)
     )

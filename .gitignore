@@ -6,7 +6,9 @@ dist/
 wheels/
 .idea/
 mcp_servers/
+logs/
 *.egg-info
+
 
 # Virtual environments
 .venv
