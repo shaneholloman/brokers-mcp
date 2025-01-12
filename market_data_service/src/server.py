@@ -13,7 +13,7 @@ from tradestation.tools import SUPPORTED_INDICATORS, get_bars, plot_bars_with_in
 from ibkr.news import get_news_headlines, get_news_article
 from ibkr.options import get_option_expirations, read_option_chain
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("market-data-service")
 
 # Create main FastMCP server
@@ -29,6 +29,9 @@ mcp.add_tool(
         unit: Unit of time for the bars. Possible values are Minute, Daily, Weekly, Monthly.
         bar_size: Interval that each bar will consist of - for minute bars, the number of minutes 
             aggregated in a single bar.
+            For example, bar_size=5 and unit=Minute will fetch 5-minute bars.
+            bar_size=60 and unit=Minute will fetch 1-hour bars.
+            Default is 1.
         bars_back: Number of bars back to fetch. Max 57,600 for intraday. No limit for 
             daily/weekly/monthly.
         extended_hours: If True, includes extended hours data.
@@ -40,10 +43,20 @@ mcp.add_tool(
 )
 mcp.add_tool(
     plot_bars_with_indicators,
-    description=dedent(f"""Calculate bars with optional indicators and plot candlestick chart
+    description=dedent(f"""Plot a chart with optional indicators for a given symbol.
     
     Args:
-        the same arguments as get_bars
+        symbol: The symbol to fetch bars for
+        unit: Unit of time for the bars. Possible values are Minute, Daily, Weekly, Monthly.
+        bar_size: Interval that each bar will consist of - for minute bars, the number of minutes 
+            aggregated in a single bar.
+            For example, bar_size=5 and unit=Minute will fetch 5-minute bars.
+            bar_size=60 and unit=Minute will fetch 1-hour bars.
+            Default is 1.
+        bars_back: Number of bars back to fetch. Max 57,600 for intraday. No limit for 
+            daily/weekly/monthly.
+        extended_hours: If True, includes extended hours data.
+        indicators: Optional indicators to plot, comma-separated. Supported: {SUPPORTED_INDICATORS}
     
     Returns:
         A candlestick chart with indicators (if given) and the bars data

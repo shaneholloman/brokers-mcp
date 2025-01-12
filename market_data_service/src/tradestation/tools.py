@@ -1,8 +1,9 @@
-import base64
-from datetime import datetime, timedelta
+from datetime import datetime
 import io
-import json
-from typing import Optional, Annotated
+import logging
+from typing import Optional
+from pandas.tseries.offsets import BDay
+from pandas.tseries.offsets import BusinessHour
 import matplotlib
 matplotlib.use("Agg")
 import pandas as pd
@@ -22,15 +23,35 @@ SUPPORTED_INDICATORS = [
     "bbands_{window_period}_{num_std}",
 ]
 
-def bars_back_interval(unit: str, bar_size: int) -> timedelta:
-    if unit == "Minute":
-        return timedelta(minutes=bar_size)
-    elif unit == "Daily":
-        return timedelta(days=bar_size)
+logger = logging.getLogger(__name__)
+
+def bars_back_interval(unit: str, bar_size: int) -> pd.DateOffset:
+    """
+    Return a Pandas DateOffset that, when subtracted from a date/datetime, 
+    skips weekends for Daily/Weekly/Monthly, and skips non-market hours 
+    for Minute bars (optionally including extended trading hours).
+    """
+    if unit == "Daily":
+        return BDay(n=bar_size)
+    
     elif unit == "Weekly":
-        return timedelta(days=7 * bar_size)
+        return BDay(n=5 * bar_size)
+    
     elif unit == "Monthly":
-        return timedelta(days=30 * bar_size)
+        return BDay(n=21 * bar_size)
+    
+    else:
+        raise ValueError(f"Unknown unit: {unit}")
+
+def default_bars_back(unit: str, bar_size: int) -> int:
+    if unit == "Minute":
+        return 1170 // bar_size # 3 days
+    elif unit == "Daily":
+        return 30 // bar_size # 30 days
+    elif unit == "Weekly":
+        return 52 // bar_size # 52 weeks
+    elif unit == "Monthly":
+        return 24 // bar_size # 24 months
     else:
         raise ValueError(f"Unknown unit: {unit}")
 
@@ -58,19 +79,19 @@ def add_indicators_to_bars_df(bars: pd.DataFrame, indicators: list[str]):
             try:
                 bars[f"sma_{period}"] = bars["close"].rolling(period).mean()
             except Exception as e:
-                print(f"Error calculating SMA {period}: {e}")
+                logger.debug(f"Error calculating SMA {period}: {e}")
         elif indicator.startswith("ema_"):
             period = int(indicator.split("_")[1])
             try:
                 bars[f"ema_{period}"] = bars["close"].ewm(span=period).mean()
             except Exception as e:
-                print(f"Error calculating EMA {period}: {e}")
+                logger.debug(f"Error calculating EMA {period}: {e}")
         elif indicator.startswith("rsi_"):
             window_period = int(indicator.split("_")[1])
             try:
                 bars[f"rsi_{window_period}"] = pandas_ta.rsi(bars["close"], window_period)
             except Exception as e:
-                print(f"Error calculating RSI {window_period}: {e}")
+                logger.debug(f"Error calculating RSI {window_period}: {e}")
         elif indicator.startswith("macd_"):
             fast_period, slow_period, signal_period = map(int, indicator.split("_")[1:])
             try:
@@ -79,12 +100,12 @@ def add_indicators_to_bars_df(bars: pd.DataFrame, indicators: list[str]):
                 bars[f"macd_signal_{fast_period}_{slow_period}_{signal_period}"] = macd.iloc[:, 2]
                 bars[f"macd_histogram_{fast_period}_{slow_period}_{signal_period}"] = macd.iloc[:, 1]
             except Exception as e:
-                print(f"Error calculating MACD {fast_period}_{slow_period}_{signal_period}: {e}")
+                logger.debug(f"Error calculating MACD {fast_period}_{slow_period}_{signal_period}: {e}")
         elif indicator == "vwap":
             try:
                 bars["vwap"] = pandas_ta.vwap(bars["high"], bars["low"], bars["close"], bars["volume"])
             except Exception as e:
-                print(f"Error calculating VWAP: {e}")
+                logger.debug(f"Error calculating VWAP: {e}")
         elif indicator.startswith("bbands_"):
             window_period, num_std = map(int, indicator.split("_")[1:])
             try:
@@ -93,7 +114,7 @@ def add_indicators_to_bars_df(bars: pd.DataFrame, indicators: list[str]):
                 bars[f"bbands_{window_period}_{num_std}_mid"] = bbands.iloc[:, 1]
                 bars[f"bbands_{window_period}_{num_std}_lower"] = bbands.iloc[:, 2]
             except Exception as e:
-                print(f"Error calculating BBands {window_period}_{num_std}: {e}")
+                logger.debug(f"Error calculating BBands {window_period}_{num_std}: {e}")
         else:
             raise ValueError(f"Unknown indicator: {indicator}")
 
@@ -117,14 +138,16 @@ def plot_bars(bars: pd.DataFrame):
         ma_colors = ['blue', 'orange', 'green', 'red', 'purple']
         for i, ma_col in enumerate(ma_columns):
             color = ma_colors[i % len(ma_colors)]
-            add_plots.append(mpf.make_addplot(
-                bars[ma_col],
-                type='line',
-                linestyle='solid',
-                width=1,
-                color=color,
-                panel=0
-            ))
+            add_plots.append(
+                mpf.make_addplot(
+                    bars[ma_col],
+                    type='line',
+                    linestyle='solid',
+                    width=1,
+                    color=color,
+                    panel=0
+                )
+            )
 
     # VWAP Indicator
     if 'vwap' in bars.columns:
@@ -236,33 +259,40 @@ def plot_bars(bars: pd.DataFrame):
 async def get_bars(
     symbol: str,
     unit: str,
-    bar_size: int,
     bars_back: Optional[int] = None,
+    bar_size: int = 1,
     indicators: Optional[str] = None,
     extended_hours: bool = False
 ) -> str:
-    bars_back_requested = bars_back if bars_back else 1000000
     if indicators:
         min_bars_back = max(indicator_min_bars_back(i) for i in indicators.split(','))
         if bars_back is not None:
             bars_back = min_bars_back + bars_back
-
-    effective_firstdate = datetime.now() - bars_back_interval(unit, bar_size) * bars_back
-    effective_firstdate = max(effective_firstdate, datetime(2020, 1, 1))
-    bars_df = await tradestation.get_bars(
-        symbol=symbol,
-        unit=unit,
-        interval=bar_size,
-        firstdate=effective_firstdate.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        extended_hours=extended_hours,
-    )
+    if unit == "Minute":
+        bars_df = await tradestation.get_bars(
+            symbol=symbol,
+            unit=unit,
+            interval=bar_size,
+            barsback=bars_back,
+            extended_hours=extended_hours,
+        )
+    else:
+        effective_firstdate = datetime.now() - bars_back_interval(unit, bar_size) * bars_back
+        effective_firstdate = max(effective_firstdate, datetime(2020, 1, 1))
+        bars_df = await tradestation.get_bars(
+            symbol=symbol,
+            unit=unit,
+            interval=bar_size,
+            firstdate=effective_firstdate.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            extended_hours=extended_hours,
+        )
     bars_df.set_index("datetime", inplace=True)
     if indicators:
         indicator_list = [i.strip() for i in indicators.split(',')]
         add_indicators_to_bars_df(bars_df, indicator_list)
     bars_df = bars_df.drop(columns=["date"]).reset_index()
     bars_df["datetime"] = bars_df["datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
-    return bars_df.iloc[-bars_back_requested:].to_json(orient="records", lines=True)
+    return bars_df.to_json(orient="records", lines=True)
 
 async def plot_bars_with_indicators(
     symbol: str,
@@ -272,6 +302,7 @@ async def plot_bars_with_indicators(
     bars_back: Optional[int] = None,
     extended_hours: bool = False
 ) -> tuple[Image, str]:
+    bars_back_requested = bars_back if bars_back else default_bars_back(unit, bar_size)
     # Get the bars data
     bars_df = pd.read_json(await get_bars(
         symbol=symbol,
@@ -291,5 +322,5 @@ async def plot_bars_with_indicators(
     # Return both the image and the data
     return (
         Image(data=buf.read(), format="png"),
-        bars_df.to_json(orient="records", lines=True)
+        bars_df.iloc[-bars_back_requested:].to_json(orient="records", lines=True)
     )
