@@ -6,6 +6,8 @@ from tradingview_screener import *
 from async_screener import Query, Scanner
 from column_values_index import index
 from scanner import QUERY_LANGUAGE_DOCS
+import traceback
+
 
 logger = getLogger(__name__)
 
@@ -28,6 +30,7 @@ async def scan_from_scanner(list_name: str) -> str:
         result = (await getattr(Scanner, list_name).async_get_scanner_data())[1]
         return str(result)
     except Exception as e:
+        logger.error("Error while executing query: %s\nStack trace: %s", repr(e), traceback.format_exc())
         raise ValueError("Error while executing query: " + repr(e))
 
 @mcp.tool(name="search_available_columns")
@@ -72,8 +75,10 @@ async def scan_for_stocks(query: str) -> str:
                 return (f"Unknown field in query: {query}, query the available columns"
                        f" with search_available_columns and try again with a valid column")
             else:
+                logger.error("Error while executing query: %s\nStack trace: %s", repr(err), traceback.format_exc())
                 raise ValueError(f"Error while executing query: {err}")
     except Exception as e:
+        logger.error("Error while executing query: %s\nStack trace: %s", repr(e), traceback.format_exc())
         raise ValueError("Error while executing query: " + repr(e))
 
 if __name__ == "__main__":

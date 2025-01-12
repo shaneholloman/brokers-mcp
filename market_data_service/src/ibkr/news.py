@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from logging import getLogger
 
+import re
 import pytz
 
 from common_lib.util import list_items, datetime_to_time_ago
@@ -36,9 +37,10 @@ async def get_news_headlines(
     # Convert news timestamp to "how long ago"
     edited = []
     for news_item in news:
-        if news_item.time < start_date:
+        if news_item.time < start_date.replace(tzinfo=None):
             break
         time_ago_string = datetime_to_time_ago(news_item.time)
+        news_item = news_item._replace(headline=re.sub(r'\{.*?\}', '', news_item.headline).strip())
         edited.append(news_item._replace(time=time_ago_string))
 
     return list_items(edited)

@@ -27,13 +27,12 @@ mcp.add_tool(
     Args:
         symbol: The symbol to fetch bars for
         unit: Unit of time for the bars. Possible values are Minute, Daily, Weekly, Monthly.
-        interval: Interval that each bar will consist of - for minute bars, the number of minutes 
+        bar_size: Interval that each bar will consist of - for minute bars, the number of minutes 
             aggregated in a single bar.
         bars_back: Number of bars back to fetch. Max 57,600 for intraday. No limit for 
             daily/weekly/monthly.
-        firstdate: The first date formatted as YYYY-MM-DD OR YYYY-MM-DDTHH:mm:SSZ.
-        lastdate: The last date formatted as YYYY-MM-DD,2020-04-20T18:00:00Z.
         extended_hours: If True, includes extended hours data.
+        indicators: Optional indicators to plot, comma-separated. Supported: {SUPPORTED_INDICATORS}
     
     Returns:
         str: bars data as a json records
@@ -44,16 +43,7 @@ mcp.add_tool(
     description=dedent(f"""Calculate bars with optional indicators and plot candlestick chart
     
     Args:
-        symbol: The symbol to plot
-        unit: Unit of time for the bars. Possible values are Minute, Daily, Weekly, Monthly.
-        interval: Interval that each bar will consist of - for minute bars, the number of minutes 
-            aggregated in a single bar.
-        indicators: Optional indicators to plot, comma-separated. Supported: {SUPPORTED_INDICATORS}
-        bars_back: Number of bars back to fetch. Max 57,600 for intraday. No limit for 
-            daily/weekly/monthly.
-        firstdate: The first date formatted as YYYY-MM-DD OR YYYY-MM-DDTHH:mm:SSZ.
-        lastdate: The last date formatted as YYYY-MM-DD,2020-04-20T18:00:00Z.
-        extended_hours: If True, includes extended hours data.
+        the same arguments as get_bars
     
     Returns:
         A candlestick chart with indicators (if given) and the bars data
