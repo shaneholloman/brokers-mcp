@@ -80,6 +80,27 @@ async def scan_for_stocks(query: str) -> str:
     except Exception as e:
         logger.error("Error while executing query: %s\nStack trace: %s", repr(e), traceback.format_exc())
         raise ValueError("Error while executing query: " + repr(e))
+    
+
+
+# todo: get_symbol_summary needs to be a resource template but it currently doesn't work
+@mcp.tool(description="Get a summary of important metrics for a given symbol")
+async def get_symbol_summary(symbol: str) -> str:
+    query = (Query()
+        .select(
+            "name", "close", "volume", "market_cap_basic",
+            "price_52_week_high", "price_52_week_low", "High.3M", "Low.3M",
+            "postmarket_high", "postmarket_low", "premarket_high", "premarket_low",
+            "VWAP", "industry", "sector", "change_from_open", "Perf.1M", "Perf.3M",
+            "float_shares_outstanding", "gap", "oper_income_fy", "earnings_release_next_date"
+        )
+        .where(Column("name") == symbol)
+    )
+    result = (await query.async_get_scanner_data())[1]
+    result["earnings_release_next_date"] = result["earnings_release_next_date"].apply(lambda x: x.strftime("%Y-%m-%d") if x else None)
+    result["oper_income_fy_millions"] = result["oper_income_fy"] // 1000000
+    result["market_cap_basic_millions"] = result["market_cap_basic"] // 1000000
+    return result.to_json(orient="records")
 
 if __name__ == "__main__":
     mcp.run(transport="sse")

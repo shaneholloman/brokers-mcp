@@ -48,4 +48,51 @@ There are also the ORDER BY, OFFSET, and LIMIT statements. The following query s
 ...  .offset(5)
 ...  .limit(15))
 ```
+                             
+All supported Column operations:
+* > 
+* >= 
+* < 
+* <= 
+* == 
+* != 
+* between
+Example:
+>>> Column('close').between(Column('EMA200'), Column('EMA50'))
+* not_between
+Example:
+>>> Column('close').not_between(Column('EMA200'), Column('EMA50'))
+* isin
+Example:
+>>> Column('name').isin("Apple Microsoft") # like the python in operator
+* not_in
+Example:
+>>> Column('name').not_in("Apple Microsoft") # like the python not in operator
+* has
+Example:
+>>> Column('name').has(["AI", "ML", "Artifical Intelligence"]) # like `isin` but for sets
+* has_none_of               
+* above_pct
+Examples:
+    The closing price is higher than the VWAP by more than 3%
+    >>> Column('close').above_pct(Column('VWAP'), 1.03)
+
+    closing price is above the 52-week-low by more than 150%
+    >>> Column('close').above_pct(Column('price_52_week_low'), 2.5)
+* below_pct
+Examples:
+    The closing price is lower than the VWAP by 3% or more
+    >>> Column('close').below_pct('VWAP', 1.03)                      
+* between_pct
+Examples:
+    The percentage change between the Close and the EMA is between 20% and 50%
+    >>> Column('close').between_pct('EMA200', 1.2, 1.5)
+* not_between_pct
+Examples:
+    The percentage change between the Close and the EMA is between 20% and 50%
+    >>> Column('close').not_between_pct('EMA200', 1.2, 1.5)
+* like
+Examples:
+    The name contains "Crypto"
+    >>> Column('name').like("%Crypto%")
 """)

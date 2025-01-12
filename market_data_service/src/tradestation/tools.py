@@ -322,5 +322,5 @@ async def plot_bars_with_indicators(
     # Return both the image and the data
     return (
         Image(data=buf.read(), format="png"),
-        bars_df.iloc[-bars_back_requested:].to_json(orient="records", lines=True)
+        bars_df.iloc[-100:].to_json(orient="records", lines=True)
     )

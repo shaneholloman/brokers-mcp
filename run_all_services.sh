@@ -47,7 +47,7 @@ stop_services() {
 trap stop_services SIGINT SIGTERM
 
 # Start counter for IBKR client IDs
-client_id=3
+client_id=1
 
 # Start all services with different ports and incrementing client IDs
 run_service "brokerage_service" 8001 $client_id

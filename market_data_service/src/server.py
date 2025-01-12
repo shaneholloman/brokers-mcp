@@ -26,7 +26,7 @@ mcp.add_tool(
     
     Args:
         symbol: The symbol to fetch bars for
-        unit: Unit of time for the bars. Possible values are Minute, Daily, Weekly, Monthly.
+        unit: Unit of time for the bars. Possible values are Minute, Daily, Weekly, Monthly ONLY. NO OTHER VALUES ARE SUPPORTED.
         bar_size: Interval that each bar will consist of - for minute bars, the number of minutes 
             aggregated in a single bar.
             For example, bar_size=5 and unit=Minute will fetch 5-minute bars.
@@ -47,7 +47,7 @@ mcp.add_tool(
     
     Args:
         symbol: The symbol to fetch bars for
-        unit: Unit of time for the bars. Possible values are Minute, Daily, Weekly, Monthly.
+        unit: Unit of time for the bars. Possible values are Minute, Daily, Weekly, Monthly. ONLY THESE VALUES ARE SUPPORTED.
         bar_size: Interval that each bar will consist of - for minute bars, the number of minutes 
             aggregated in a single bar.
             For example, bar_size=5 and unit=Minute will fetch 5-minute bars.
@@ -57,6 +57,8 @@ mcp.add_tool(
             daily/weekly/monthly.
         extended_hours: If True, includes extended hours data.
         indicators: Optional indicators to plot, comma-separated. Supported: {SUPPORTED_INDICATORS}
+
+    to get an hourly chart, use unit=Minute and bar_size=60
     
     Returns:
         A candlestick chart with indicators (if given) and the bars data
