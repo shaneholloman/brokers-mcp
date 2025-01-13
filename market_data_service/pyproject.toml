@@ -16,3 +16,6 @@ dependencies = [
 [[project.authors]]
 name = "Itay Verkh"
 email = "itay1542@gmail.com"
+
+[tool.uv.sources]
+common = { workspace = true }

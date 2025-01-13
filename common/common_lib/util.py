@@ -22,9 +22,9 @@ class BrokerTools(BaseModel):
 
 def is_market_open():
     now = datetime.now(tz=timezone("US/Eastern"))
-    return now.weekday() < 5 and 9 <= now.hour < 16
+    return now.weekday() < 5 and (10 <= now.hour < 16 or now.hour == 9 and now.minute >= 30)
 
-def unpack(obj):
+def unpack(obj) -> dict:
     if isinstance(obj, dict):
         return {key: unpack(value) for key, value in obj.items()}
     elif isinstance(obj, list):

@@ -6,6 +6,8 @@ from mcp.server.fastmcp.resources import FunctionResource
 
 from common_lib.util import unpack
 
+from orders import _filter_keys
+
 logger = getLogger(__name__)
 
 def get_portfolio() -> str:
@@ -44,7 +46,7 @@ def get_all_orders() -> str:
     ib = get_ib()
     all_orders = ib.trades()
     filled_and_open_orders = [order for order in all_orders if not order.orderStatus.status == "Cancelled"]
-    as_json = json.dumps(unpack(filled_and_open_orders), default=str)
+    as_json = json.dumps([_filter_keys(order) for order in filled_and_open_orders], default=str)
     return as_json
 
 all_orders_resource = FunctionResource(
@@ -58,7 +60,7 @@ def get_open_orders() -> str:
     """Get all open orders in the account"""
     ib = get_ib()
     open_orders = ib.openOrders()
-    as_json = json.dumps(unpack(open_orders), default=str)
+    as_json = json.dumps([_filter_keys(order) for order in open_orders], default=str)
     return as_json
 
 open_orders_resource = FunctionResource(
@@ -75,7 +77,7 @@ def get_orders_for_symbol(symbol: str) -> str:
     symbol_orders = [order for order in all_orders 
                     if order.contract.symbol == symbol 
                     and not order.orderStatus.status == "Cancelled"]
-    as_json = json.dumps(unpack(symbol_orders), default=str)
+    as_json = json.dumps([_filter_keys(order) for order in symbol_orders], default=str)
     return as_json
 
 symbol_orders_resource = FunctionResource(

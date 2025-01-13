@@ -47,7 +47,7 @@ stop_services() {
 trap stop_services SIGINT SIGTERM
 
 # Start counter for IBKR client IDs
-client_id=1
+client_id=$((RANDOM % 1000))  # Generate a random client ID between 0 and 999
 
 # Start all services with different ports and incrementing client IDs
 run_service "brokerage_service" 8001 $client_id

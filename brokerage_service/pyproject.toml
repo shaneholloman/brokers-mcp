@@ -1,5 +1,5 @@
 [project]
-name = "brokerage_service"
+name = "brokerage-service"
 version = "0.1.0"
 description = "A Model Context Protocol server providing IBKR brokerage access"
 requires-python = ">=3.10"
@@ -13,3 +13,4 @@ email = "itay1542@gmail.com"
 
 [tool.uv.sources]
 common = { workspace = true }
+brokerage-service = { workspace = true }
