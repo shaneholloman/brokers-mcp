@@ -3,6 +3,8 @@ from textwrap import dedent
 # Documentation for the query language
 QUERY_LANGUAGE_DOCS = dedent("""
 The Query object represents a query that can be made to the official tradingview API, and it stores all the data as JSON internally.
+IMPORTANT NOTE:
+The "name" column refers to the ticker symbol, like "AAPL" or "MSFT".
 
 Examples:
 
@@ -64,13 +66,13 @@ Example:
 >>> Column('close').not_between(Column('EMA200'), Column('EMA50'))
 * isin
 Example:
->>> Column('name').isin("Apple Microsoft") # like the python in operator
+>>> Column('name').isin(["AAPL", "MSFT"]) # get AAPL and MSFT tickers
 * not_in
 Example:
->>> Column('name').not_in("Apple Microsoft") # like the python not in operator
+>>> Column('name').not_in(["AAPL", "MSFT"]) # get all tickers except AAPL and MSFT
 * has
 Example:
->>> Column('name').has(["AI", "ML", "Artifical Intelligence"]) # like `isin` but for sets
+>>> Column('typespecs').has(["common"]) # used when the column value is a list
 * has_none_of               
 * above_pct
 Examples:
@@ -93,6 +95,6 @@ Examples:
     >>> Column('close').not_between_pct('EMA200', 1.2, 1.5)
 * like
 Examples:
-    The name contains "Crypto"
-    >>> Column('name').like("%Crypto%")
+    The stock description contains "Crypto"
+    >>> Column('description').like("Crypto")
 """)

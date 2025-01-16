@@ -309,7 +309,7 @@ async def plot_bars_with_indicators(
         unit=unit,
         bar_size=bar_size,
         indicators=indicators,
-        bars_back=bars_back,
+        bars_back=bars_back_requested,
         extended_hours=extended_hours,
     ), lines=True, orient="records")
     bars_df["datetime"] = pd.to_datetime(bars_df["datetime"], format="%Y-%m-%d %H:%M:%S")

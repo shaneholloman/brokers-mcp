@@ -3,16 +3,26 @@ import json
 import logging
 from common_lib.util import is_market_open
 from ib_insync import LimitOrder, OrderStatus, Trade
+from ib_insync.util import UNSET_DOUBLE
 from common_lib.ib import get_ib, get_contract
 
 logger = logging.getLogger(__name__)
 
 async def _wait_for_order_to_submit(order: Trade) -> Trade:
     retries = 200
-    while order.orderStatus.status in OrderStatus.ActiveStates and order.orderStatus.status != OrderStatus.Submitted:
+    while order.isActive() and order.orderStatus.status != OrderStatus.Submitted:
         if retries <= 0:
             get_ib().cancelOrder(order.order)
-            raise TimeoutError(f"Order {order.order.orderId} failed to submit")
+            await asyncio.sleep(0.01)
+        if order.orderStatus.status in [OrderStatus.Cancelled, OrderStatus.PendingCancel]:
+            while order.isActive():
+                await asyncio.sleep(0.01)
+            if order.orderStatus.status == OrderStatus.Filled:
+                return order
+            else:
+                order_log_messages = "\n".join([f'{log.time.strftime("%Y-%m-%d %H:%M:%S")}: {log.status} - {log.message}' for log in order.log])
+                raise TimeoutError(f"Order {order.order.orderId} failed to submit, log: {order_log_messages}")
+            
         logger.info(f"Waiting for order {order.order.orderId} to be submitted, order_id: {order.order.orderId}, current status: {order.orderStatus.status}")
         await asyncio.sleep(0.01)
     return order
@@ -32,6 +42,8 @@ def _filter_keys(trade: Trade) -> dict:
         "filled": trade.orderStatus.filled,
         "remaining": trade.orderStatus.remaining,
         "average_fill_price": trade.orderStatus.avgFillPrice,
+        "lmt_price": trade.order.lmtPrice if trade.order.lmtPrice != UNSET_DOUBLE else None,
+        "stop_price": trade.order.auxPrice if trade.order.auxPrice != UNSET_DOUBLE else None,
     }
     
     sec_type = trade.contract.secType
@@ -94,13 +106,13 @@ async def place_new_order(
         parent_order = [trade for trade in trades if trade.order.parentId == 0][0]
         await _wait_for_order_to_submit(parent_order)
         
-        return json.dumps(_filter_keys(parent_order), default=str)
+        return f"Bracket Order with parent ID: {parent_order.order.orderId} submitted successfully, with take profit at {take_profit} and stop loss at {stop_loss}"
     
     # Place single order
     trade = ib.placeOrder(contract, order)
     await _wait_for_order_to_submit(trade)
 
-    return json.dumps(_filter_keys(trade), default=str)
+    return f"Order submitted successfully, order ID: {trade.order.orderId}"
 
 async def modify_order(order_id: int, price: float | None = None) -> str:
     """Modify an existing order by its id
@@ -128,7 +140,7 @@ async def modify_order(order_id: int, price: float | None = None) -> str:
     modified_trade = ib.placeOrder(trade.contract, trade.order)
     await _wait_for_order_to_submit(modified_trade)
     
-    return json.dumps(_filter_keys(modified_trade), default=str)
+    return f"Order modified successfully, order ID: {modified_trade.order.orderId}"
 
 async def cancel_order(order_id: int) -> str:
     """Cancel an existing order by its id
@@ -148,4 +160,5 @@ async def cancel_order(order_id: int) -> str:
     cancelled_trade = ib.cancelOrder(trade.order)
     await _wait_for_order_to_submit(cancelled_trade)
     
-    return json.dumps(_filter_keys(cancelled_trade), default=str)
+    return f"Order cancelled successfully, order ID: {cancelled_trade.order.orderId}"
+

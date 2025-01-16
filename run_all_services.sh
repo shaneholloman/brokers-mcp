@@ -10,13 +10,12 @@ mkdir -p logs
 run_service() {
     local service_name=$1
     local port=$2
-    local client_id=$3
     local log_file="logs/${service_name}.log"
     
-    echo "Starting ${service_name} on port ${port} with IBKR client ID ${client_id}..."
+    echo "Starting ${service_name} on port ${port}"
     
     # Run the service with UV workspace package and redirect output to log file
-    FASTMCP_PORT=${port} IBKR_CLIENT_ID=${client_id} uv run \
+    FASTMCP_PORT=${port} uv run \
         --package "${service_name}" \
         python "${service_name}/src/server.py" \
         > "${log_file}" 2>&1 &
@@ -46,25 +45,20 @@ stop_services() {
 # Set up trap for clean shutdown
 trap stop_services SIGINT SIGTERM
 
-# Start counter for IBKR client IDs
-client_id=$((RANDOM % 1000))  # Generate a random client ID between 0 and 999
+# Start all services with different ports
+run_service "brokerage_service" 8001
 
-# Start all services with different ports and incrementing client IDs
-run_service "brokerage_service" 8001 $client_id
-client_id=$((client_id + 1))
+run_service "market_data_service" 8002
 
-run_service "market_data_service" 8002 $client_id
-client_id=$((client_id + 1))
-
-run_service "research_service" 8003 $client_id
+run_service "research_service" 8003
 
 echo "All services started. Press Ctrl+C to stop all services."
 echo "Check logs/ directory for service output."
 echo
 echo "Services are running on:"
-echo "- Brokerage Service: http://localhost:8001 (IBKR Client ID: 1)"
-echo "- Market Data Service: http://localhost:8002 (IBKR Client ID: 2)"
-echo "- Research Service: http://localhost:8003 (IBKR Client ID: 3)"
+echo "- Brokerage Service: http://localhost:8001"
+echo "- Market Data Service: http://localhost:8002"
+echo "- Research Service: http://localhost:8003"
 
 # Wait for all background processes
 wait

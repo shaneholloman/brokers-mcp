@@ -1,23 +1,17 @@
+from dotenv import load_dotenv
+
+load_dotenv()
 import logging
 from textwrap import dedent
-import nest_asyncio
-nest_asyncio.apply()
-
-from dotenv import load_dotenv
-load_dotenv()
-
-from common_lib.ib import connect_ib
-from common_lib.mcp import AsyncioFastMCP
-
+from alpaca_api.tools import get_news
+from mcp.server.fastmcp import FastMCP
 from tradestation.tools import SUPPORTED_INDICATORS, get_bars, plot_bars_with_indicators
-from ibkr.news import get_news_headlines, get_news_article
-from ibkr.options import get_option_expirations, read_option_chain
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("market-data-service")
 
 # Create main FastMCP server
-mcp = AsyncioFastMCP("Market Data Service")
+mcp = FastMCP(name="Market Data Service")
 
 # Add tools
 mcp.add_tool(
@@ -64,18 +58,10 @@ mcp.add_tool(
         A candlestick chart with indicators (if given) and the bars data
     """)
 )
-mcp.add_tool(get_news_headlines)
-mcp.add_tool(get_news_article)
-mcp.add_tool(get_option_expirations)
-mcp.add_tool(read_option_chain)
+mcp.add_tool(get_news)
 
 def main():
-    try:
-        ib = connect_ib()
-        logger.info("Connected to IBKR successfully")
-        mcp.run(transport="sse")
-    finally:
-        ib.disconnect()
+    mcp.run(transport="sse")
 
 if __name__ == "__main__":
     main()

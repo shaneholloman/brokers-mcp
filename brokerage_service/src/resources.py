@@ -13,8 +13,8 @@ logger = getLogger(__name__)
 def get_portfolio() -> str:
     ib = get_ib()
     """Get account portfolio holdings, including stocks, options, and futures"""
-    portfolio = ib.portfolio()
-    as_json = json.dumps(unpack(portfolio), indent=2, default=str)
+    positions = ib.reqPositions()
+    as_json = json.dumps(unpack(positions), default=str)
     return as_json
 
 portfolio_resource = FunctionResource(
@@ -44,7 +44,8 @@ account_summary_resource = FunctionResource(
 def get_all_orders() -> str:
     """Get all orders in the account from the current session"""
     ib = get_ib()
-    all_orders = ib.trades()
+    all_orders = ib.reqCompletedOrders(apiOnly=True)
+    all_orders += ib.reqOpenOrders()
     filled_and_open_orders = [order for order in all_orders if not order.orderStatus.status == "Cancelled"]
     as_json = json.dumps([_filter_keys(order) for order in filled_and_open_orders], default=str)
     return as_json
@@ -59,7 +60,7 @@ all_orders_resource = FunctionResource(
 def get_open_orders() -> str:
     """Get all open orders in the account"""
     ib = get_ib()
-    open_orders = ib.openOrders()
+    open_orders = ib.openTrades()
     as_json = json.dumps([_filter_keys(order) for order in open_orders], default=str)
     return as_json
 

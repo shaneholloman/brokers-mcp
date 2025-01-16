@@ -1,3 +1,4 @@
+from datetime import datetime
 from logging import getLogger
 from urllib.error import HTTPError
 from mcp.server.fastmcp import FastMCP
@@ -82,7 +83,6 @@ async def scan_for_stocks(query: str) -> str:
         raise ValueError("Error while executing query: " + repr(e))
     
 
-
 # todo: get_symbol_summary needs to be a resource template but it currently doesn't work
 @mcp.tool(description="Get a summary of important metrics for a given symbol")
 async def get_symbol_summary(symbol: str) -> str:
@@ -97,10 +97,18 @@ async def get_symbol_summary(symbol: str) -> str:
         .where(Column("name") == symbol)
     )
     result = (await query.async_get_scanner_data())[1]
-    result["earnings_release_next_date"] = result["earnings_release_next_date"].apply(lambda x: x.strftime("%Y-%m-%d") if x else None)
-    result["oper_income_fy_millions"] = result["oper_income_fy"] // 1000000
+    try:
+        result["earnings_release_next_date"] = datetime.fromtimestamp(result["earnings_release_next_date"].iloc[0]).strftime("%Y-%m-%d")
+    except:
+        pass
+
     result["market_cap_basic_millions"] = result["market_cap_basic"] // 1000000
+    result.drop(columns=["oper_income_fy", "market_cap_basic"], inplace=True)
     return result.to_json(orient="records")
+
+@mcp.resource(uri="resource://get_symbol_summary/{symbol}", name="get_symbol_summary")
+async def get_symbol_summary_resource(symbol: str) -> str:
+    return await get_symbol_summary(symbol)
 
 if __name__ == "__main__":
     mcp.run(transport="sse")
