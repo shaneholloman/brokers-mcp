@@ -22,7 +22,7 @@ mcp.add_tool(modify_order)
 
 
 def main():
-    mcp.run(transport="stdio")
+    mcp.run(transport="sse")
 
 if __name__ == "__main__":
     main()

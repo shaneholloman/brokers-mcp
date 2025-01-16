@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from alpaca.data.historical.news import NewsClient
 from alpaca.data import StockHistoricalDataClient
 from alpaca.data.requests import NewsRequest
+from mcp.server.fastmcp.resources import ResourceTemplate
 from common_lib.util import datetime_to_time_ago
 from common_lib.alpaca_helpers import AlpacaSettings
 
@@ -44,3 +45,31 @@ def get_news(
         news_string += f"*{news_item.headline}*\n{when}\n{news_item.summary}\n\n"
 
     return news_string
+
+def latest_headline(symbol: str) -> str:
+    request = NewsRequest(
+        symbols=symbol,
+        start=datetime.now() - timedelta(hours=4),
+        end=datetime.now(),
+        sort="desc"
+    )
+    news_items = news_client.get_news(request).data["news"]
+    if len(news_items) == 0:
+        return "No headline from the past 4 hours"
+    
+    return f"*{news_items[0].headline}*\n{datetime_to_time_ago(news_items[0].updated_at)}"
+
+latest_headline_resource = ResourceTemplate(
+    uri_template="news://latest_headline/{symbol}",
+    name="Get the latest headline for a symbol",
+    description="Get the latest headline for a symbol",
+    fn=latest_headline,
+    parameters={
+        "symbol": {
+            "type": "string",
+            "description": "The symbol to get the latest headline for",
+            "required": True
+        }
+    }
+)
+

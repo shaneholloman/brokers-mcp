@@ -88,11 +88,11 @@ def get_completed_orders(symbol: str) -> str:
     orders = trading_client.get_orders(filter=GetOrdersRequest(
         status=QueryOrderStatus.CLOSED,
         after=datetime.now() - timedelta(days=1),
-        symbol=symbol
+        symbols=[symbol]
     ))
     lines = ["--------------------------------"]
     for o in orders:
-        if o.status == OrderStatus.FILLED:
+        if o.status in [OrderStatus.FILLED, OrderStatus.HELD]:
             lines.append(
                 f"Order ID: {o.id}, "
                 f"Symbol: {o.symbol}, "
@@ -128,7 +128,7 @@ def get_open_orders(symbol: str) -> str:
     open_orders = trading_client.get_orders(
         filter=GetOrdersRequest(
             status=QueryOrderStatus.OPEN,
-            symbol=symbol
+            symbols=[symbol]
         )
     )
     if not open_orders:

@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 load_dotenv()
 import logging
 from textwrap import dedent
-from alpaca_api.tools import get_news
+from alpaca_api.news import get_news, latest_headline_resource
 from mcp.server.fastmcp import FastMCP
 from tradestation.tools import SUPPORTED_INDICATORS, get_bars, plot_bars_with_indicators
 
@@ -59,6 +59,7 @@ mcp.add_tool(
     """)
 )
 mcp.add_tool(get_news)
+mcp._resource_manager._templates[latest_headline_resource.uri_template] = latest_headline_resource
 
 def main():
     mcp.run(transport="sse")
