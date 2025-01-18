@@ -4,8 +4,12 @@ load_dotenv()
 import logging
 from textwrap import dedent
 from alpaca_api.news import get_news, latest_headline_resource
+from alpaca_api.tools import (
+    SUPPORTED_INDICATORS,
+    get_alpaca_bars as get_bars,
+    plot_alpaca_bars_with_indicators as plot_bars_with_indicators
+)
 from mcp.server.fastmcp import FastMCP
-from tradestation.tools import SUPPORTED_INDICATORS, get_bars, plot_bars_with_indicators
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger("market-data-service")
@@ -35,6 +39,7 @@ mcp.add_tool(
         str: bars data as a json records
     """)
 )
+
 mcp.add_tool(
     plot_bars_with_indicators,
     description=dedent(f"""Plot a chart with optional indicators for a given symbol.
