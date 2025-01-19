@@ -27,7 +27,7 @@ This repository uses UV workspaces to manage multiple interconnected packages. E
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/itay1542/portfolio_service.git
+git clone https://github.com/itay1542/brokers-mcp.git portfolio_service
 cd portfolio_service
 ```
 
