@@ -3,7 +3,7 @@ from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import LimitOrderRequest, TakeProfitRequest, StopLossRequest, GetOrderByIdRequest, ReplaceOrderRequest
 from alpaca.trading.enums import OrderSide, OrderClass, OrderStatus, OrderType, TimeInForce
 
-from common_lib.alpaca_helpers import AlpacaSettings
+from common_lib.alpaca_helpers.env import AlpacaSettings
 from common_lib.util import is_market_open
 
 settings = AlpacaSettings()
@@ -57,7 +57,7 @@ async def place_order(
             stop_price=stop_loss
         )
 
-    submitted_order = trading_client.submit_order(order_request)
+    submitted_order = await trading_client.submit_order(order_request)
     retries = 5
     while submitted_order.status in [
         OrderStatus.PENDING_NEW,
@@ -66,7 +66,7 @@ async def place_order(
     ] and retries > 0:
         retries -= 1
         await asyncio.sleep(0.1)
-        submitted_order = trading_client.get_order_by_id(submitted_order.id, GetOrderByIdRequest(nested=True))
+        submitted_order = await trading_client.get_order_by_id(submitted_order.id, GetOrderByIdRequest(nested=True))
     
     if submitted_order.status in [OrderStatus.PENDING_CANCEL, OrderStatus.CANCELED, OrderStatus.EXPIRED, OrderStatus.REJECTED, OrderStatus.STOPPED, OrderStatus.SUSPENDED, OrderStatus.PENDING_NEW]:
         raise Exception(f"Order failed to be placed: {submitted_order.status.value}")
@@ -103,7 +103,7 @@ async def modify_order(
     if not limit_price and not stop_price and not size:
         raise Exception("Must provide at least one of limit price, stop price, or size")
     
-    replaced_order = trading_client.replace_order_by_id(
+    replaced_order = await trading_client.replace_order_by_id(
         order_id,
         ReplaceOrderRequest(
             limit_price=limit_price,
@@ -119,7 +119,7 @@ async def modify_order(
         OrderStatus.ACCEPTED,
     ]:
         await asyncio.sleep(0.1)
-        replaced_order = trading_client.get_order_by_id(
+        replaced_order = await trading_client.get_order_by_id(
             replaced_order.id,
             GetOrderByIdRequest(nested=True)
         )
@@ -155,10 +155,10 @@ async def cancel_order(order_id: str) -> str:
     Cancel an existing order. If successful, returns a string confirming cancellation.
     """
     # Initiate the cancel
-    trading_client.cancel_order_by_id(order_id)
+    await trading_client.cancel_order_by_id(order_id)
 
     # Poll the order until we see it's canceled (or some other final state)
-    order = trading_client.get_order_by_id(order_id, GetOrderByIdRequest(nested=True))
+    order = await trading_client.get_order_by_id(order_id, GetOrderByIdRequest(nested=True))
     while order.status not in [
         OrderStatus.CANCELED,
         OrderStatus.EXPIRED,
@@ -167,7 +167,7 @@ async def cancel_order(order_id: str) -> str:
         OrderStatus.SUSPENDED
     ]:
         await asyncio.sleep(0.1)
-        order = trading_client.get_order_by_id(order_id, GetOrderByIdRequest(nested=True))
+        order = await trading_client.get_order_by_id(order_id, GetOrderByIdRequest(nested=True))
 
     # Check final status
     if order.status == OrderStatus.CANCELED:

@@ -37,7 +37,7 @@ mcp.add_tool(
     
     Returns:
         str: bars data as a json records
-    """
+    """,
 )
 
 mcp.add_tool(
@@ -62,14 +62,20 @@ mcp.add_tool(
     
     Returns:
         A candlestick chart with indicators (if given) and the bars data
-    """
+    """,
 )
 mcp.add_tool(get_news)
-mcp._resource_manager._templates[latest_headline_resource.uri_template] = latest_headline_resource
-mcp._resource_manager._templates[get_bars_resource_template.uri_template] = get_bars_resource_template
+mcp._resource_manager._templates[latest_headline_resource.uri_template] = (
+    latest_headline_resource
+)
+mcp._resource_manager._templates[get_bars_resource_template.uri_template] = (
+    get_bars_resource_template
+)
+
 
 def main():
     mcp.run(transport="sse")
+
 
 if __name__ == "__main__":
     main()

@@ -2,13 +2,13 @@ from datetime import datetime, timedelta
 from logging import getLogger
 
 # If you have your Alpaca settings in a helper class:
-from common_lib.alpaca_helpers import AlpacaSettings
+from common_lib.alpaca_helpers.async_impl.trading_client import AsyncTradingClient
+from common_lib.alpaca_helpers.env import AlpacaSettings
 
 # Assume you’re using the same resource pattern as before:
 from mcp.server.fastmcp.resources import FunctionResource, ResourceTemplate
 
 # Alpaca imports:
-from alpaca.trading.client import TradingClient
 from alpaca.trading.enums import OrderStatus, OrderType
 from alpaca.trading.requests import GetOrdersRequest, QueryOrderStatus
 import pytz
@@ -17,14 +17,14 @@ logger = getLogger(__name__)
 
 # Initialize your trading client
 settings = AlpacaSettings()
-trading_client = TradingClient(settings.api_key, settings.api_secret)
+trading_client = AsyncTradingClient(settings.api_key, settings.api_secret)
 
-def get_portfolio(symbol: str) -> str:
+async def get_portfolio(symbol: str) -> str:
     """
     Get account portfolio holdings, including stocks (and possibly crypto if enabled).
     Returns a nicely formatted multiline string.
     """
-    positions = trading_client.get_all_positions()
+    positions = await trading_client.get_all_positions()
     if not positions:
         return "No positions found."
 
@@ -57,12 +57,12 @@ portfolio_resource = ResourceTemplate(
     }
 )
 
-def get_account_summary() -> str:
+async def get_account_summary() -> str:
     """
     Get high-level account information, like buying power, equity, etc.,
     returned in a simple multiline string.
     """
-    account = trading_client.get_account()
+    account = await trading_client.get_account()
     lines = [
         "Account Summary:",
         "----------------",
@@ -84,8 +84,8 @@ account_summary_resource = FunctionResource(
     fn=get_account_summary,
 )
 
-def get_completed_orders(symbol: str) -> str:
-    orders = trading_client.get_orders(filter=GetOrdersRequest(
+async def get_completed_orders(symbol: str) -> str:
+    orders = await trading_client.get_orders(filter=GetOrdersRequest(
         status=QueryOrderStatus.CLOSED,
         after=datetime.now() - timedelta(days=1),
         symbols=[symbol]
@@ -121,11 +121,11 @@ completed_orders_resource = ResourceTemplate(
     }
 )
 
-def get_open_orders(symbol: str) -> str:
+async def get_open_orders(symbol: str) -> str:
     """
     Get only open orders in the account and return them in a multiline string.
     """
-    open_orders = trading_client.get_orders(
+    open_orders = await trading_client.get_orders(
         filter=GetOrdersRequest(
             status=QueryOrderStatus.OPEN,
             symbols=[symbol]

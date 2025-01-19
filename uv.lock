@@ -414,12 +414,14 @@ name = "fin-agents-servers"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "aiohttp" },
     { name = "alpaca-py" },
     { name = "common" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "aiohttp", specifier = ">=3.11.11" },
     { name = "alpaca-py", specifier = ">=0.35.1" },
     { name = "common", editable = "common" },
 ]
