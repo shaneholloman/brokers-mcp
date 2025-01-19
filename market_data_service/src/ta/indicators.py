@@ -1,59 +1,14 @@
-from datetime import datetime
-import io
-import logging
-from typing import Optional
-from pandas.tseries.offsets import BDay
-from pandas.tseries.offsets import BusinessHour
 import matplotlib
 matplotlib.use("Agg")
-import pandas as pd
+import io
+import logging
 import pandas_ta
+import pandas as pd
 from matplotlib import pyplot as plt
-from mcp.server.fastmcp import Image
 import mplfinance as mpf
 
-from tradestation.api import tradestation
-
-SUPPORTED_INDICATORS = [
-    "sma_{period}",
-    "ema_{period}",
-    "rsi_{window_period}",
-    "macd_{fast_period}_{slow_period}_{signal_period}",
-    "vwap",
-    "bbands_{window_period}_{num_std}",
-]
 
 logger = logging.getLogger(__name__)
-
-def bars_back_interval(unit: str, bar_size: int) -> pd.DateOffset:
-    """
-    Return a Pandas DateOffset that, when subtracted from a date/datetime, 
-    skips weekends for Daily/Weekly/Monthly, and skips non-market hours 
-    for Minute bars (optionally including extended trading hours).
-    """
-    if unit == "Daily":
-        return BDay(n=bar_size)
-    
-    elif unit == "Weekly":
-        return BDay(n=5 * bar_size)
-    
-    elif unit == "Monthly":
-        return BDay(n=21 * bar_size)
-    
-    else:
-        raise ValueError(f"Unknown unit: {unit}")
-
-def default_bars_back(unit: str, bar_size: int) -> int:
-    if unit == "Minute":
-        return 1170 // bar_size # 3 days
-    elif unit == "Daily":
-        return 30 // bar_size # 30 days
-    elif unit == "Weekly":
-        return 52 // bar_size # 52 weeks
-    elif unit == "Monthly":
-        return 24 // bar_size # 24 months
-    else:
-        raise ValueError(f"Unknown unit: {unit}")
 
 def indicator_min_bars_back(indicator: str) -> int:
     """Return the minimum number of bars back required for an indicator"""
@@ -65,12 +20,11 @@ def indicator_min_bars_back(indicator: str) -> int:
         return int(indicator.split("_")[1])
     elif indicator.startswith("macd_"):
         return max(int(indicator.split("_")[1]), int(indicator.split("_")[2]), int(indicator.split("_")[3]))
-    elif indicator.startswith("vwap"):
-        return 1
     elif indicator.startswith("bbands_"):
         return int(indicator.split("_")[1])
     return 1
 
+# Reuse your existing add_indicators function
 def add_indicators_to_bars_df(bars: pd.DataFrame, indicators: list[str]):
     """Add technical indicators to the bars dataframe"""
     for indicator in indicators:
@@ -101,11 +55,6 @@ def add_indicators_to_bars_df(bars: pd.DataFrame, indicators: list[str]):
                 bars[f"macd_histogram_{fast_period}_{slow_period}_{signal_period}"] = macd.iloc[:, 1]
             except Exception as e:
                 logger.debug(f"Error calculating MACD {fast_period}_{slow_period}_{signal_period}: {e}")
-        elif indicator == "vwap":
-            try:
-                bars["vwap"] = pandas_ta.vwap(bars["high"], bars["low"], bars["close"], bars["volume"])
-            except Exception as e:
-                logger.debug(f"Error calculating VWAP: {e}")
         elif indicator.startswith("bbands_"):
             window_period, num_std = map(int, indicator.split("_")[1:])
             try:
@@ -117,7 +66,7 @@ def add_indicators_to_bars_df(bars: pd.DataFrame, indicators: list[str]):
                 logger.debug(f"Error calculating BBands {window_period}_{num_std}: {e}")
         else:
             raise ValueError(f"Unknown indicator: {indicator}")
-
+        
 def plot_bars(bars: pd.DataFrame):
     """
     Plots a candlestick chart with volume, moving averages, RSI, and MACD if present in the DataFrame.
@@ -255,72 +204,3 @@ def plot_bars(bars: pd.DataFrame):
     plt.close(fig)  # Close the figure to free memory
     buf.seek(0)  # Seek to the beginning of the BytesIO buffer
     return buf
-
-async def get_bars(
-    symbol: str,
-    unit: str,
-    bars_back: Optional[int] = None,
-    bar_size: int = 1,
-    indicators: Optional[str] = None,
-    extended_hours: bool = False
-) -> str:
-    if indicators:
-        min_bars_back = max(indicator_min_bars_back(i) for i in indicators.split(','))
-        if bars_back is not None:
-            bars_back = min_bars_back + bars_back
-    if unit == "Minute":
-        bars_df = await tradestation.get_bars(
-            symbol=symbol,
-            unit=unit,
-            interval=bar_size,
-            barsback=bars_back,
-            extended_hours=extended_hours,
-        )
-    else:
-        effective_firstdate = datetime.now() - bars_back_interval(unit, bar_size) * bars_back
-        effective_firstdate = max(effective_firstdate, datetime(2020, 1, 1))
-        bars_df = await tradestation.get_bars(
-            symbol=symbol,
-            unit=unit,
-            interval=bar_size,
-            firstdate=effective_firstdate.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            extended_hours=extended_hours,
-        )
-    bars_df.set_index("datetime", inplace=True)
-    if indicators:
-        indicator_list = [i.strip() for i in indicators.split(',')]
-        add_indicators_to_bars_df(bars_df, indicator_list)
-    bars_df = bars_df.drop(columns=["date"]).reset_index()
-    bars_df["datetime"] = bars_df["datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
-    return bars_df.to_json(orient="records", lines=True)
-
-async def plot_bars_with_indicators(
-    symbol: str,
-    unit: str,
-    bar_size: int,
-    indicators: str = "",
-    bars_back: Optional[int] = None,
-    extended_hours: bool = False
-) -> tuple[Image, str]:
-    bars_back_requested = bars_back if bars_back else default_bars_back(unit, bar_size)
-    # Get the bars data
-    bars_df = pd.read_json(await get_bars(
-        symbol=symbol,
-        unit=unit,
-        bar_size=bar_size,
-        indicators=indicators,
-        bars_back=bars_back_requested,
-        extended_hours=extended_hours,
-    ), lines=True, orient="records")
-    bars_df["datetime"] = pd.to_datetime(bars_df["datetime"], format="%Y-%m-%d %H:%M:%S")
-    bars_df.set_index("datetime", inplace=True)
-    
-    # Generate the plot
-    buf = plot_bars(bars_df)
-    bars_df.reset_index(inplace=True)
-    bars_df["datetime"] = bars_df["datetime"].dt.strftime("%Y-%m-%d %H:%M:%S")
-    # Return both the image and the data
-    return (
-        Image(data=buf.read(), format="png"),
-        bars_df.iloc[-100:].to_json(orient="records", lines=True)
-    )

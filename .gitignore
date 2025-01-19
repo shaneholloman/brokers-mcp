@@ -13,3 +13,5 @@ logs/
 # Virtual environments
 .venv
 .env
+
+.langgraph_api/
