@@ -1,6 +1,6 @@
 import asyncio
 from alpaca.trading.client import TradingClient
-from alpaca.trading.requests import LimitOrderRequest, TakeProfitRequest, StopLossRequest, GetOrderByIdRequest, ReplaceOrderRequest
+from alpaca.trading.requests import LimitOrderRequest, TakeProfitRequest, StopLossRequest, GetOrderByIdRequest, ReplaceOrderRequest, ClosePositionRequest
 from alpaca.trading.enums import OrderSide, OrderClass, OrderStatus, OrderType, TimeInForce
 
 from common_lib.alpaca_helpers.env import AlpacaSettings
@@ -177,3 +177,12 @@ async def cancel_order(order_id: str) -> str:
             f"Order {order_id} was not canceled. Final status: {order.status.value}"
         )
     
+async def liquidate_position(symbol: str) -> str:
+    """
+    Liquidate 100% of a position in a given symbol. This also cancels all open orders for the symbol.
+    """
+    try:
+        await trading_client.close_position(symbol, ClosePositionRequest(percentage="100"))
+        return f"Position {symbol} was successfully liquidated."
+    except Exception as e:
+        return f"Failed to liquidate position {symbol}: {repr(e)}"

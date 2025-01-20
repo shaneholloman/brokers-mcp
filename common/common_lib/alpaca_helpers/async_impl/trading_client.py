@@ -1,7 +1,6 @@
 from uuid import UUID
 from common_lib.alpaca_helpers.async_impl.async_rest import AsyncRestClient
 from pydantic import TypeAdapter
-import json
 
 from alpaca.common import RawData
 from alpaca.common.utils import (
@@ -9,12 +8,10 @@ from alpaca.common.utils import (
     validate_uuid_id_param,
     validate_symbol_or_asset_id,
 )
-from alpaca.common.rest import RESTClient
 from typing import Optional, List, Union
 from alpaca.common.enums import BaseURL
 
 from alpaca.trading.requests import (
-    GetCalendarRequest,
     ClosePositionRequest,
     GetAssetsRequest,
     GetOptionContractsRequest,
@@ -24,9 +21,6 @@ from alpaca.trading.requests import (
     ReplaceOrderRequest,
     GetOrderByIdRequest,
     CancelOrderResponse,
-    CreateWatchlistRequest,
-    UpdateWatchlistRequest,
-    GetCorporateAnnouncementsRequest,
 )
 
 from alpaca.trading.models import (
@@ -38,10 +32,7 @@ from alpaca.trading.models import (
     ClosePositionResponse,
     Asset,
     Watchlist,
-    Clock,
-    Calendar,
     TradeAccount,
-    CorporateActionAnnouncement,
     AccountConfiguration,
 )
 
@@ -160,7 +151,7 @@ class AsyncTradingClient(AsyncRestClient):
         """
         params = {"client_order_id": client_id}
 
-        response = await self.get(f"/orders:by_client_order_id", params)
+        response = await self.get("/orders:by_client_order_id", params)
 
         if self._use_raw_data:
             return response
@@ -201,7 +192,7 @@ class AsyncTradingClient(AsyncRestClient):
         Returns:
             List[CancelOrderResponse]: The list of HTTP statuses for each order attempted to be cancelled.
         """
-        response = await self.delete(f"/orders")
+        response = await self.delete("/orders")
 
         if self._use_raw_data:
             return response
@@ -356,7 +347,7 @@ class AsyncTradingClient(AsyncRestClient):
             PortfolioHistory: The portfolio history statistics for the account.
         """
         response = await self.get(
-            f"/account/portfolio/history",
+            "/account/portfolio/history",
             history_filter.to_request_fields() if history_filter else {},
         )
 
@@ -383,7 +374,7 @@ class AsyncTradingClient(AsyncRestClient):
         # checking to see if we specified at least one param
         params = filter.to_request_fields() if filter is not None else {}
 
-        response = await self.get(f"/assets", params)
+        response = await self.get("/assets", params)
 
         if self._use_raw_data:
             return response
@@ -475,7 +466,7 @@ class AsyncTradingClient(AsyncRestClient):
             List[Watchlist]: The list of all watchlists.
         """
 
-        result = await self.get(f"/watchlists")
+        result = await self.get("/watchlists")
 
         if self._use_raw_data:
             return result

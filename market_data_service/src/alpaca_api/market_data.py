@@ -1,13 +1,10 @@
 from datetime import datetime
 import logging
-import trace
-import traceback
 from typing import Optional
 from common_lib.alpaca_helpers.async_impl.stock_client import (
     AsyncStockHistoricalDataClient,
 )
 from common_lib.alpaca_helpers.env import AlpacaSettings
-from alpaca.common.rest import RESTClient
 import pandas as pd
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit

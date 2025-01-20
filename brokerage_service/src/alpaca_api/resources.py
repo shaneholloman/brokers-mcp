@@ -28,7 +28,7 @@ async def get_portfolio(symbol: str) -> str:
     if not positions:
         return "No positions found."
 
-    lines = ["------------------"]
+    lines = []
     for pos in positions:
         if pos.symbol == symbol or symbol == "all":
             lines.append(
@@ -41,7 +41,7 @@ async def get_portfolio(symbol: str) -> str:
                 f"Side: {pos.side}, "
                 f"Current Price: {pos.current_price}, "
             )
-    return "\n".join(lines)
+    return "".join(lines)
 
 portfolio_resource = ResourceTemplate(
     uri_template="account://portfolio/{symbol}",
@@ -163,6 +163,23 @@ open_orders_resource = ResourceTemplate(
             "type": "string",
             "description": "The symbol of the orders to get",
             "default": "all"
+        }
+    }
+)
+
+async def has_order_filled(order_id: str) -> bool:
+    order = await trading_client.get_order_by_id(order_id)
+    return order.filled_qty == order.qty
+
+order_filled_resource = ResourceTemplate(
+    uri_template="brokerage://order_filled/{order_id}",
+    name="Check if an order has been filled",
+    description="Check if an order has been filled",
+    fn=has_order_filled,
+    parameters={
+        "order_id": {
+            "type": "string",
+            "description": "The ID of the order to check",
         }
     }
 )
