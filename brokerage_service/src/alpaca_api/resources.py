@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from logging import getLogger
 
 # If you have your Alpaca settings in a helper class:
+from alpaca.trading.client import TradingClient
 from common_lib.alpaca_helpers.async_impl.trading_client import AsyncTradingClient
 from common_lib.alpaca_helpers.env import AlpacaSettings
 
@@ -9,8 +10,8 @@ from common_lib.alpaca_helpers.env import AlpacaSettings
 from mcp.server.fastmcp.resources import FunctionResource, ResourceTemplate
 
 # Alpaca imports:
-from alpaca.trading.enums import OrderStatus, OrderType
-from alpaca.trading.requests import GetOrdersRequest, QueryOrderStatus
+from alpaca.trading.enums import OrderStatus, OrderType, QueryOrderStatus
+from alpaca.trading.requests import GetOrdersRequest
 import pytz
 
 logger = getLogger(__name__)
@@ -18,6 +19,7 @@ logger = getLogger(__name__)
 # Initialize your trading client
 settings = AlpacaSettings()
 trading_client = AsyncTradingClient(settings.api_key, settings.api_secret)
+sync_trading_client = TradingClient(settings.api_key, settings.api_secret)
 
 async def get_portfolio(symbol: str) -> str:
     """
@@ -57,12 +59,12 @@ portfolio_resource = ResourceTemplate(
     }
 )
 
-async def get_account_summary() -> str:
+def get_account_summary() -> str:
     """
     Get high-level account information, like buying power, equity, etc.,
     returned in a simple multiline string.
     """
-    account = await trading_client.get_account()
+    account = sync_trading_client.get_account() # this is done sync because mcp bug where a resources cant be async (?)
     lines = [
         "Account Summary:",
         "----------------",

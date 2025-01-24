@@ -12,7 +12,6 @@ from pandas.tseries.offsets import BDay, BusinessHour
 import pytz
 from ta.indicators import add_indicators_to_bars_df, indicator_min_bars_back, plot_bars
 from mcp.server.fastmcp import Image
-from mcp.server.fastmcp.resources import ResourceTemplate
 
 # Initialize Alpaca client
 settings = AlpacaSettings()
@@ -184,56 +183,3 @@ async def plot_alpaca_bars_with_indicators(
         .loc[:, ["datetime", "open", "low", "high", "close", "volume", "vwap"]]
         .to_json(orient="records", lines=True),
     )
-
-
-def get_bars_resource(
-    symbol: str,
-    unit: str,
-    bar_size: int,
-    indicators: str = "",
-    bars_back: Optional[int] = None,
-    extended_hours: bool = False,
-) -> str:
-    return get_alpaca_bars(
-        symbol, unit, bar_size, indicators, bars_back, extended_hours
-    )
-
-
-get_bars_resource_template = ResourceTemplate(
-    uri_template="market_data://bars/{symbol}/{unit}/{bar_size}/{indicators}/{bars_back}/{extended_hours}",
-    name="get_bars",
-    description="Get market data",
-    fn=get_bars_resource,
-    parameters={
-        "symbol": {
-            "type": "string",
-            "description": "The symbol to get the latest headline for",
-            "required": True,
-        },
-        "unit": {
-            "type": "string",
-            "description": "The unit of time for the bars. Possible values are Minute, Hour, Daily, Weekly, Monthly",
-            "required": True,
-        },
-        "bar_size": {
-            "type": "int",
-            "description": "Interval that each bar will consist of - for minute bars, the number of minutes aggregated in a single bar",
-            "required": True,
-        },
-        "indicators": {
-            "type": "string",
-            "description": "Optional indicators to plot, comma-separated. Supported: {SUPPORTED_INDICATORS}",
-            "required": False,
-        },
-        "bars_back": {
-            "type": "int",
-            "description": "Number of bars back to fetch. Max 57,600 for intraday. No limit for daily/weekly/monthly",
-            "required": False,
-        },
-        "extended_hours": {
-            "type": "bool",
-            "description": "If True, includes extended hours data",
-            "required": False,
-        },
-    },
-)

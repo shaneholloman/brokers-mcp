@@ -1,14 +1,14 @@
 import asyncio
-from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import LimitOrderRequest, TakeProfitRequest, StopLossRequest, GetOrderByIdRequest, ReplaceOrderRequest, ClosePositionRequest
 from alpaca.trading.enums import OrderSide, OrderClass, OrderStatus, OrderType, TimeInForce
 
+from common_lib.alpaca_helpers.async_impl.trading_client import AsyncTradingClient
 from common_lib.alpaca_helpers.env import AlpacaSettings
 from common_lib.util import is_market_open
 
 settings = AlpacaSettings()
 
-trading_client = TradingClient(settings.api_key, settings.api_secret)
+trading_client = AsyncTradingClient(settings.api_key, settings.api_secret)
 
 async def place_order(
     symbol: str,

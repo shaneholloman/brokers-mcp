@@ -7,7 +7,6 @@ from alpaca_api.market_data import (
     SUPPORTED_INDICATORS,
     get_alpaca_bars as get_bars,
     plot_alpaca_bars_with_indicators as plot_bars_with_indicators,
-    get_bars_resource_template,
 )
 from mcp.server.fastmcp import FastMCP
 
@@ -68,10 +67,6 @@ mcp.add_tool(get_news)
 mcp._resource_manager._templates[latest_headline_resource.uri_template] = (
     latest_headline_resource
 )
-mcp._resource_manager._templates[get_bars_resource_template.uri_template] = (
-    get_bars_resource_template
-)
-
 
 def main():
     mcp.run(transport="sse")
