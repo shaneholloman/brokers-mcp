@@ -27,8 +27,6 @@ async def get_portfolio(symbol: str) -> str:
     Returns a nicely formatted multiline string.
     """
     positions = await trading_client.get_all_positions()
-    if not positions:
-        return "No positions found."
 
     lines = []
     for pos in positions:
@@ -43,6 +41,9 @@ async def get_portfolio(symbol: str) -> str:
                 f"Side: {pos.side}, "
                 f"Current Price: {pos.current_price}, "
             )
+    if not lines:
+        return f"No positions found for {symbol}."
+        
     return "".join(lines)
 
 portfolio_resource = ResourceTemplate(

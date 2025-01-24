@@ -143,11 +143,12 @@ class AsyncRestClient(ABC):
 
         # Build request options
         opts: Dict[str, Any] = {"headers": headers}
-        for k, v in list(data.items()):
-            if isinstance(v, Enum):
-                data[k] = v.value
-            if v is None:
-                del data[k]
+        if data:
+            for k, v in list(data.items()):
+                if isinstance(v, Enum):
+                    data[k] = v.value
+                if v is None:
+                    del data[k]
         # Decide whether to send data as query params or JSON
         if method.upper() in ["GET", "DELETE"]:
             opts["params"] = data
