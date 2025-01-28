@@ -1,6 +1,4 @@
 from datetime import datetime, timedelta
-from alpaca.data.historical.news import NewsClient
-from alpaca.data import StockHistoricalDataClient
 from alpaca.data.requests import NewsRequest
 from common_lib.alpaca_helpers.async_impl.news_client import AsyncNewsClient
 from mcp.server.fastmcp.resources import ResourceTemplate
@@ -41,7 +39,7 @@ async def get_news(symbols: str, days_back: int = 1) -> str:
         when = datetime_to_time_ago(news_item.updated_at)
         news_string += f"*{news_item.headline}*\n{when}\n{news_item.summary}\n\n"
 
-    return news_string
+    return news_string or "No news found"
 
 
 async def latest_headline(symbol: str) -> str:

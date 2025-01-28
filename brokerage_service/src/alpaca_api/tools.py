@@ -3,12 +3,15 @@ from alpaca.trading.requests import LimitOrderRequest, TakeProfitRequest, StopLo
 from alpaca.trading.enums import OrderSide, OrderClass, OrderStatus, OrderType, TimeInForce
 
 from common_lib.alpaca_helpers.async_impl.trading_client import AsyncTradingClient
+from common_lib.alpaca_helpers.simulation.trading_client import SimulationTradingClient
 from common_lib.alpaca_helpers.env import AlpacaSettings
 from common_lib.util import is_market_open
 
 settings = AlpacaSettings()
-
-trading_client = AsyncTradingClient(settings.api_key, settings.api_secret)
+if settings.simulation:
+    trading_client = SimulationTradingClient(settings.api_key, settings.api_secret)
+else:
+    trading_client = AsyncTradingClient(settings.api_key, settings.api_secret)
 
 async def place_order(
     symbol: str,
@@ -21,6 +24,7 @@ async def place_order(
 ) -> str:
     """
     Place a limit order for a stock. Optionally include a take profit and stop loss to create a bracket order.
+    Stop loss and take profit must both be specified if one of them is provided.
 
     Args:
         symbol: The symbol of the stock to place an order for

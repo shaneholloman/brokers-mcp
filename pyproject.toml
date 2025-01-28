@@ -7,6 +7,7 @@ dependencies = [
     "aiohttp>=3.11.11",
     "alpaca-py>=0.35.1",
     "common",
+    "sqlalchemy>=2.0.37",
 ]
 
 [[project.authors]]

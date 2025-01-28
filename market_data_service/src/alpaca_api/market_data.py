@@ -64,7 +64,7 @@ def default_bars_back(unit: str, bar_size: int) -> int:
 def bars_back_to_datetime(
     unit: str, bar_size: int, bars_back: int, extended_hours=False
 ) -> datetime:
-    now = datetime.now(tz=pytz.timezone("US/Eastern"))
+    now = settings.asof or datetime.now(tz=pytz.timezone("US/Eastern"))
     if unit == "Minute":
         total_minutes = bars_back * bar_size
         hours = (total_minutes // 60) + 1
@@ -98,9 +98,11 @@ async def get_alpaca_bars(
     bar_size: int = 1,
     indicators: Optional[str] = None,
     extended_hours: bool = False,
+    truncate_bars: bool = True,
 ) -> str:
     """Get historical bars data for a stock symbol"""
     timeframe = get_timeframe(unit, bar_size)
+    original_bars_back = bars_back or default_bars_back(unit, bar_size)
 
     if indicators:
         min_bars_back = max(indicator_min_bars_back(i) for i in indicators.split(","))
@@ -116,6 +118,7 @@ async def get_alpaca_bars(
         symbol_or_symbols=symbol,
         timeframe=timeframe,
         start=start,
+        end=settings.asof or datetime.now(),
         adjustment="all",
         feed="iex",  # todo: switch to SIP when subscribed to real time alpaca data
     )
@@ -138,8 +141,10 @@ async def get_alpaca_bars(
     bars_df = bars_df.reset_index()
     bars_df["timestamp"] = bars_df["timestamp"].dt.strftime("%Y-%m-%d %H:%M:%S")
     bars_df = bars_df.rename(columns={"timestamp": "datetime"})
+    if truncate_bars:
+        bars_df = bars_df.iloc[-original_bars_back:]
 
-    return bars_df.iloc[-bars_back:].to_json(orient="records", lines=True)
+    return bars_df.to_json(orient="records", lines=True)
 
 
 async def plot_alpaca_bars_with_indicators(
@@ -160,6 +165,7 @@ async def plot_alpaca_bars_with_indicators(
             indicators=indicators,
             bars_back=bars_back_requested,
             extended_hours=extended_hours,
+            truncate_bars=False,
         ),
         lines=True,
         orient="records",
@@ -179,7 +185,7 @@ async def plot_alpaca_bars_with_indicators(
     # Return both the image and the data
     return (
         Image(data=buf.read(), format="png"),
-        bars_df.iloc[-70:]
+        bars_df.iloc[-bars_back_requested:]
         .loc[:, ["datetime", "open", "low", "high", "close", "volume", "vwap"]]
         .to_json(orient="records", lines=True),
     )

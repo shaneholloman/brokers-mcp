@@ -1,8 +1,7 @@
-from typing import Any, Dict, Optional
+from typing import Dict, Optional
 from common_lib.alpaca_helpers.async_impl.async_rest import AsyncRestClient
-from typing import Dict, Optional, Union
+from typing import Union
 
-from alpaca.common.constants import DATA_V2_MAX_LIMIT
 from alpaca.common.enums import BaseURL
 from alpaca.common.types import RawData
 from alpaca.data import Bar, Quote, Snapshot, Trade
