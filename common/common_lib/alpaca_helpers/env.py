@@ -3,6 +3,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import validator
 from datetime import datetime
 
+from pytz import timezone
+
 class AlpacaSettings(BaseSettings):
     api_key: str
     api_secret: str
@@ -14,5 +16,5 @@ class AlpacaSettings(BaseSettings):
     @validator("asof", pre=True, always=True)
     def parse_asof(cls, value):
         if value:
-            return datetime.fromisoformat(value)
+            return datetime.fromisoformat(value).astimezone(timezone("US/Eastern"))
         return None
