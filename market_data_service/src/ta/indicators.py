@@ -83,11 +83,9 @@ def add_indicators_to_bars_df(bars: pd.DataFrame, indicators: list[str]):
                 bars[f"bbands_{window_period}_{num_std}_lower"] = bbands.iloc[:, 2]
             except Exception as e:
                 logger.debug(f"Error calculating BBands {window_period}_{num_std}: {e}")
-        else:
-            raise ValueError(f"Unknown indicator: {indicator}")
 
 
-def plot_bars(bars: pd.DataFrame):
+def plot_bars(bars: pd.DataFrame, title: str):
     """
     Plots a candlestick chart with volume, moving averages, RSI, and MACD if present in the DataFrame.
     """
@@ -231,7 +229,7 @@ def plot_bars(bars: pd.DataFrame):
         volume=True,  # Include volume subplot
         ylabel="Price",  # Y-axis label for price
         ylabel_lower="Volume",  # Y-axis label for volume
-        title="Stock Prices",  # Chart title
+        title=title,  # Chart title
         figsize=(12, 8),  # Figure size
         addplot=add_plots,  # Additional plots (moving averages, RSI, MACD)
         panel_ratios=panel_ratios,  # Adjust the panel ratios

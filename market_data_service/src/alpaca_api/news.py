@@ -22,8 +22,8 @@ async def get_news(symbols: str, days_back: int = 1) -> str:
     """
     request = NewsRequest(
         symbols=symbols,
-        start=(settings.asof or datetime.now()) - timedelta(days=days_back),
-        end=settings.asof or datetime.now(),
+        start=datetime.now() - timedelta(days=days_back),
+        end=datetime.now(),
         sort="asc",
     )
     all_news = []
@@ -45,17 +45,15 @@ async def get_news(symbols: str, days_back: int = 1) -> str:
 async def latest_headline(symbol: str) -> str:
     request = NewsRequest(
         symbols=symbol,
-        start=(settings.asof or datetime.now()) - timedelta(hours=4),
-        end=settings.asof or datetime.now(),
+        start=datetime.now() - timedelta(hours=4),
+        end=datetime.now(),
         sort="desc",
     )
     news_items = (await news_client.get_news(request)).data["news"]
     if len(news_items) == 0:
         return "No headline from the past 4 hours"
 
-    return (
-        f"*{news_items[0].headline}*\n{datetime_to_time_ago(news_items[0].updated_at, settings.asof)}"
-    )
+    return f"*{news_items[0].headline}*\n{datetime_to_time_ago(news_items[0].updated_at)}"
 
 
 latest_headline_resource = ResourceTemplate(
