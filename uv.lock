@@ -115,6 +115,18 @@ wheels = [
 ]
 
 [[package]]
+name = "aiosqlite"
+version = "0.20.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0d/3a/22ff5415bf4d296c1e92b07fd746ad42c96781f13295a074d58e77747848/aiosqlite-0.20.0.tar.gz", hash = "sha256:6d35c8c256637f4672f843c31021464090805bf925385ac39473fb16eaaca3d7", size = 21691 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/00/c4/c93eb22025a2de6b83263dfe3d7df2e19138e345bca6f18dba7394120930/aiosqlite-0.20.0-py3-none-any.whl", hash = "sha256:36a1deaca0cac40ebe32aac9977a6e2bbc7f5189f23f4a54d5908986729e5bd6", size = 15564 },
+]
+
+[[package]]
 name = "alpaca-py"
 version = "0.37.0"
 source = { registry = "https://pypi.org/simple" }
@@ -178,11 +190,19 @@ name = "brokerage-service"
 version = "0.1.0"
 source = { virtual = "brokerage_service" }
 dependencies = [
+    { name = "aiosqlite" },
     { name = "common" },
+    { name = "greenlet" },
+    { name = "sqlalchemy" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "common", editable = "common" }]
+requires-dist = [
+    { name = "aiosqlite", specifier = ">=0.20.0" },
+    { name = "common", editable = "common" },
+    { name = "greenlet", specifier = ">=3.1.1" },
+    { name = "sqlalchemy", specifier = ">=2.0.37" },
+]
 
 [[package]]
 name = "certifi"
@@ -417,7 +437,6 @@ dependencies = [
     { name = "aiohttp" },
     { name = "alpaca-py" },
     { name = "common" },
-    { name = "sqlalchemy" },
 ]
 
 [package.metadata]
@@ -425,7 +444,6 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.11.11" },
     { name = "alpaca-py", specifier = ">=0.35.1" },
     { name = "common", editable = "common" },
-    { name = "sqlalchemy", specifier = ">=2.0.37" },
 ]
 
 [[package]]

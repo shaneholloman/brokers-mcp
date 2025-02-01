@@ -1,6 +1,7 @@
 from datetime import datetime
 from logging import getLogger
 from urllib.error import HTTPError
+from common_lib.mcp import get_current_market_time, is_realtime
 from mcp.server.fastmcp import FastMCP
 import tradingview_screener
 from tradingview_screener import *
@@ -83,17 +84,23 @@ async def scan_for_stocks(query: str) -> str:
         raise ValueError("Error while executing query: " + repr(e))
     
 
-# todo: get_symbol_summary needs to be a resource template but it currently doesn't work
+# todo: implement it without using tradingview for historical data
 @mcp.tool(description="Get a summary of important metrics for a given symbol")
 async def get_symbol_summary(symbol: str) -> str:
-    query = (Query()
-        .select(
+    if is_realtime():
+        columns = [
             "name", "close", "volume", "market_cap_basic",
             "price_52_week_high", "price_52_week_low", "High.3M", "Low.3M",
             "postmarket_high", "postmarket_low", "premarket_high", "premarket_low",
             "VWAP", "industry", "sector", "change_from_open", "Perf.1M", "Perf.3M",
             "float_shares_outstanding", "gap", "oper_income_fy", "earnings_release_next_date"
-        )
+        ]
+    else:
+        columns = [
+            "name", "market_cap_basic","industry", "sector","float_shares_outstanding", "oper_income_fy"
+        ]
+    query = (Query()
+        .select(*columns)
         .where(Column("name") == symbol)
     )
     result = (await query.async_get_scanner_data())[1]

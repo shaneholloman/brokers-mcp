@@ -95,7 +95,7 @@ async def get_completed_orders(symbol: str) -> str:
         after=datetime.now() - timedelta(days=1),
         symbols=[symbol]
     ))
-    lines = ["--------------------------------"]
+    lines = ["\n"]
     for o in orders:
         if o.status in [OrderStatus.FILLED, OrderStatus.HELD]:
             lines.append(

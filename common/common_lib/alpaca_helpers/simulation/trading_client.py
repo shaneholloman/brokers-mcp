@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Optional, List, Union
 from uuid import UUID, uuid4
+import json
 
 from alpaca.common import RawData
 from alpaca.trading.models import (
@@ -46,11 +47,12 @@ class SimulationTradingClient:
         await self.db.close()
 
     async def submit_order(self, order_data: OrderRequest) -> Union[AlpacaOrder, RawData]:
-        """Creates a simulated order"""
+        """Creates a simulated order with optional take profit and stop loss orders"""
         order_id = str(uuid4())
         now = datetime.now()
         
         async with (await self.db.get_session()) as session:
+            # Create main order
             order = Order(
                 id=order_id,
                 client_order_id=str(uuid4()),
@@ -66,7 +68,49 @@ class SimulationTradingClient:
                 status="new"
             )
             
+            leg_orders = []
+            
+            # Create take profit order if specified
+            if hasattr(order_data, 'take_profit_price') and order_data.take_profit_price:
+                tp_order = Order(
+                    id=str(uuid4()),
+                    client_order_id=str(uuid4()),
+                    created_at=now,
+                    symbol=order_data.symbol,
+                    qty=str(order_data.qty),
+                    side="sell" if order_data.side == "buy" else "buy",
+                    type="limit",
+                    time_in_force="gtc",
+                    limit_price=str(order_data.take_profit_price),
+                    status="held"
+                )
+                leg_orders.append(tp_order)
+            
+            # Create stop loss order if specified
+            if hasattr(order_data, 'stop_loss_price') and order_data.stop_loss_price:
+                sl_order = Order(
+                    id=str(uuid4()),
+                    client_order_id=str(uuid4()),
+                    created_at=now,
+                    symbol=order_data.symbol,
+                    qty=str(order_data.qty),
+                    side="sell" if order_data.side == "buy" else "buy",
+                    type="stop",
+                    time_in_force="gtc",
+                    stop_price=str(order_data.stop_loss_price),
+                    status="held"
+                )
+                leg_orders.append(sl_order)
+            
+            # Add leg order references to main order
+            if leg_orders:
+                order.legs = json.dumps([leg.id for leg in leg_orders])
+                
+            # Add all orders to session
             session.add(order)
+            for leg_order in leg_orders:
+                session.add(leg_order)
+                
             await session.commit()
             
             if self._use_raw_data:

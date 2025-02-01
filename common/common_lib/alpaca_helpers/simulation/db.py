@@ -13,32 +13,21 @@ class Order(Base):
     __tablename__ = "orders"
     
     id: Mapped[str] = mapped_column(String, primary_key=True)
-    client_order_id: Mapped[str] = mapped_column(String, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime)
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     submitted_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     filled_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    expired_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     canceled_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    failed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     
-    asset_id: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     symbol: Mapped[str] = mapped_column(String)
-    asset_class: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     qty: Mapped[str] = mapped_column(String)
     filled_qty: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     type: Mapped[str] = mapped_column(String)
     side: Mapped[str] = mapped_column(String)
-    time_in_force: Mapped[str] = mapped_column(String)
     limit_price: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    stop_price: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     filled_avg_price: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     status: Mapped[str] = mapped_column(String)
-    extended_hours: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     legs: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    trail_percent: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    trail_price: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    hwm: Mapped[Optional[str]] = mapped_column(String, nullable=True)
 
 class Position(Base):
     __tablename__ = "positions"

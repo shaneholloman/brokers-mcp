@@ -1,14 +1,16 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from typing import Optional
 from common_lib.alpaca_helpers.async_impl.stock_client import (
     AsyncStockHistoricalDataClient,
 )
 from common_lib.alpaca_helpers.env import AlpacaSettings
+from common_lib.mcp import get_current_market_time, is_realtime
 import pandas as pd
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 from pandas.tseries.offsets import BDay, BusinessHour
+from mcp.server.lowlevel.server import request_ctx
 import pytz
 from ta.indicators import add_indicators_to_bars_df, indicator_min_bars_back, plot_bars
 from mcp.server.fastmcp import Image
@@ -67,7 +69,7 @@ def default_bars_back(unit: str, bar_size: int) -> int:
 def bars_back_to_datetime(
     unit: str, bar_size: int, bars_back: int
 ) -> datetime:
-    now = datetime.now(tz=pytz.timezone("US/Eastern"))
+    now = get_current_market_time()
     if unit == "Minute":
         total_minutes = bars_back * bar_size
         hours = (total_minutes // 60) + 1
@@ -92,7 +94,7 @@ def bars_back_to_datetime(
     else:
         raise ValueError(f"Unknown unit: {unit}")
         
-    return now - (interval * (bars_back + 10)) # the + 10 is a safety margin in 
+    return now - (interval * (bars_back + 10)) # the + 10 is a safety margin
 
 
 async def get_alpaca_bars(
@@ -114,12 +116,22 @@ async def get_alpaca_bars(
         bars_back = original_bars_back
 
     start = bars_back_to_datetime(unit, bar_size, bars_back)
+    if is_realtime() or timeframe.unit in [TimeFrameUnit.Minute, TimeFrameUnit.Hour]:
+        end = get_current_market_time()
+    else:
+        if timeframe.unit == TimeFrameUnit.Day:
+            end = get_current_market_time() - timedelta(days=1)
+        elif timeframe.unit == TimeFrameUnit.Week:
+            end = get_current_market_time() - timedelta(days=7)
+        elif timeframe.unit == TimeFrameUnit.Month:
+            end = get_current_market_time() - timedelta(days=30)
+            
     # Create the request
     request = StockBarsRequest(
         symbol_or_symbols=symbol,
         timeframe=timeframe,
         start=start,
-        end=datetime.now(),
+        end=end,
         adjustment="all",
         feed="iex",  # todo: switch to SIP when subscribed to real time alpaca data
     )

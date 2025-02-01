@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from common_lib.mcp import get_current_market_time
 from pytz import timezone
 
 
@@ -9,7 +10,7 @@ def is_market_open():
 
 
 def datetime_to_time_ago(timestamp: datetime) -> str:
-    time_diff = datetime.now(tz=timezone("US/Eastern")) - timestamp
+    time_diff = get_current_market_time() - timestamp
     if time_diff < timedelta(minutes=1):
         time_ago_string = "just now"
     elif time_diff < timedelta(minutes=60):
