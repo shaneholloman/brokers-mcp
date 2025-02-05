@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import logging
+import math
 from typing import Optional
 from common_lib.alpaca_helpers.async_impl.stock_client import (
     AsyncStockHistoricalDataClient,
@@ -10,8 +11,6 @@ import pandas as pd
 from alpaca.data.requests import StockBarsRequest
 from alpaca.data.timeframe import TimeFrame, TimeFrameUnit
 from pandas.tseries.offsets import BDay, BusinessHour
-from mcp.server.lowlevel.server import request_ctx
-import pytz
 from ta.indicators import add_indicators_to_bars_df, indicator_min_bars_back, plot_bars
 from mcp.server.fastmcp import Image
 
@@ -52,16 +51,20 @@ def get_timeframe(unit: str, bar_size: int) -> TimeFrame:
 
 def default_bars_back(unit: str, bar_size: int) -> int:
     unit = unit.upper()
-    if unit == "MINUTE":
-        return 1170 // bar_size  # 3 days
+    if unit == "MINUTE" and bar_size < 5:
+        return 120 // bar_size  # 2 hours
+    elif unit == "MINUTE" and bar_size < 15:
+        return 60 * 7 // bar_size  # 1 day
+    elif unit == "MINUTE" and bar_size < 30:
+        return 60 * 13 // bar_size  # 2 days
     elif unit == "HOUR":
         return 5 * 24 // bar_size  # 1 week
     elif unit == "DAILY":
         return 30 // bar_size  # 30 days
     elif unit == "WEEKLY":
-        return 52 // bar_size  # 52 weeks
+        return 26 // bar_size  # 26 weeks
     elif unit == "MONTHLY":
-        return 24 // bar_size  # 24 months
+        return 12 // bar_size  # 12 months
     else:
         raise ValueError(f"Unknown unit: {unit}")
 
@@ -168,14 +171,14 @@ async def plot_alpaca_bars_with_indicators(
     bars_back: Optional[int] = None,
 ) -> tuple[Image, str]:
     """Plot bars with indicators using Alpaca data"""
-    bars_back_requested = bars_back if bars_back else default_bars_back(unit, bar_size)
+    plot_bar_count = max(bars_back, default_bars_back(unit, bar_size))
     bars_df = pd.read_json(
         await get_alpaca_bars(
             symbol=symbol,
             unit=unit,
             bar_size=bar_size,
             indicators=indicators,
-            bars_back=bars_back_requested,
+            bars_back=plot_bar_count,
             truncate_bars=False,
         ),
         lines=True,
@@ -186,11 +189,19 @@ async def plot_alpaca_bars_with_indicators(
         bars_df["datetime"], format="%Y-%m-%d %H:%M:%S"
     )
     bars_df.set_index("datetime", inplace=True)
+    total_time_span = (bars_df.index[-1] - bars_df.iloc[-plot_bar_count:].index[0]).total_seconds() / 60 / 60
+    time_span_str = f"{int(math.ceil(total_time_span))} hours"
+    if unit == "Daily":
+        time_span_str = f"{int(math.ceil(total_time_span / 24))} days"
+    elif unit == "Weekly":
+        time_span_str = f"{int(math.ceil(total_time_span / 24 / 7))} weeks"
+    elif unit == "Monthly":
+        time_span_str = f"{int(math.ceil(total_time_span / 24 / 30))} months"
 
     # Generate the plot
     buf = plot_bars(
-        bars_df.iloc[-bars_back_requested:],
-        f"{symbol} bar size: {bar_size} bar unit: {unit} bar count: {bars_back_requested} ",
+        bars_df.iloc[-plot_bar_count:],
+        f"{symbol}\nbar size: {bar_size}\nbar unit: {unit}\ntotal time span: {time_span_str}",
     )
 
     bars_df.reset_index(inplace=True)
@@ -199,6 +210,6 @@ async def plot_alpaca_bars_with_indicators(
     # Return both the image and the data
     return (
         Image(data=buf.read(), format="png"),
-        bars_df.iloc[-bars_back_requested:]
+        bars_df.iloc[-(bars_back or plot_bar_count):]
         .to_json(orient="records", lines=True),
     )

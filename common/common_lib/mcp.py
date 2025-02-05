@@ -22,7 +22,7 @@ class AsyncioFastMCP(FastMCP):
 
 def get_current_market_time() -> datetime:
     request_context = request_ctx.get()
-    if request_context.meta is None or request_context.meta.marketTime == "realtime":
+    if not hasattr(request_context.meta, "marketTime") or request_context.meta.marketTime == "realtime":
         return datetime.now(tz=pytz.timezone("US/Eastern"))
     else:
         parsed = datetime.fromisoformat(request_context.meta.marketTime).replace(tzinfo=None)
@@ -30,7 +30,7 @@ def get_current_market_time() -> datetime:
 
 def is_realtime() -> bool:
     request_context = request_ctx.get()
-    return request_context.meta is None or request_context.meta.marketTime == "realtime"
+    return not hasattr(request_context.meta, "marketTime") or request_context.meta.marketTime == "realtime"
 
 def get_thread_id() -> str:
     request_context = request_ctx.get()
