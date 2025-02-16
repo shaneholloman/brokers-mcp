@@ -99,16 +99,18 @@ async def get_completed_orders(symbol: str) -> str:
     for o in orders:
         if o.status in [OrderStatus.FILLED, OrderStatus.HELD]:
             lines.append(
-                f"Order ID: {o.id}, "
-                f"Symbol: {o.symbol}, "
-                f"Side: {o.side}, "
-                f"Qty: {o.qty}, "
-                f"Type: {o.type}, "
-                f"Status: {o.status}, "
-                f"Filled Quantity: {o.filled_qty}, "
-                f"Filled Average Price: {o.filled_avg_price}, "
-                f"Filled At: {o.filled_at.astimezone(pytz.timezone('US/Eastern')).strftime('%Y-%m-%d %H:%M:%S') if o.filled_at else 'N/A'}, "
-                f"Position Intent: {o.position_intent.value if o.position_intent else 'N/A'}, "
+                f"<order>"
+                f"<id>{o.id}</id>"
+                f"<symbol>{o.symbol}</symbol>"
+                f"<side>{o.side}</side>"
+                f"<qty>{o.qty}</qty>"
+                f"<type>{o.type}</type>"
+                f"<status>{o.status}</status>"
+                f"<filled_qty>{o.filled_qty}</filled_qty>"
+                f"<filled_avg_price>{o.filled_avg_price}</filled_avg_price>"
+                f"<filled_at>{o.filled_at.astimezone(pytz.timezone('US/Eastern')).strftime('%Y-%m-%d %H:%M:%S') if o.filled_at else 'N/A'}</filled_at>"
+                f"<position_intent>{o.position_intent.value if o.position_intent else 'N/A'}</position_intent>"
+                f"</order>"
         )
     return "\n".join(lines)
 
@@ -142,19 +144,18 @@ async def get_open_orders(symbol: str) -> str:
     lines = []
     for o in open_orders:
         line = (
-            f"Order ID: {o.id}, "
-            f"Symbol: {o.symbol}, "
-            f"Side: {o.side}, "
-            f"Qty: {o.qty}, "
-            f"Status: {o.status}, "
-            f"Type: {o.type}, "
-            f"Position Intent: {o.position_intent.value if o.position_intent else 'N/A'}, "
-            f"Created At: {o.created_at.astimezone(pytz.timezone('US/Eastern')).strftime('%Y-%m-%d %H:%M:%S') if o.created_at else 'N/A'}, "
+            f"<order>"
+            f"<id>{o.id}</id>"
+            f"<symbol>{o.symbol}</symbol>"
+            f"<side>{o.side}</side>"
+            f"<qty>{o.qty}</qty>"
+            f"<status>{o.status}</status>"
+            f"<type>{o.type}</type>"
+            f"<price>{o.limit_price if o.type == OrderType.LIMIT else o.stop_price if o.type in [OrderType.STOP, OrderType.STOP_LIMIT, OrderType.TRAILING_STOP] else 'N/A'}</price>"
+            f"<position_intent>{o.position_intent.value if o.position_intent else 'N/A'}</position_intent>"
+            f"<created_at>{o.created_at.astimezone(pytz.timezone('US/Eastern')).strftime('%Y-%m-%d %H:%M:%S') if o.created_at else 'N/A'}</created_at>"
+            f"</order>"
         )
-        if o.type == OrderType.LIMIT:
-            line += f"Limit Price: {o.limit_price}, "
-        if o.type == OrderType.STOP:
-            line += f"Stop Price: {o.stop_price}, "
         lines.append(line)
     return "\n".join(lines)
 

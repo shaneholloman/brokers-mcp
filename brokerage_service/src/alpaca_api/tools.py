@@ -1,5 +1,5 @@
 import asyncio
-from alpaca.trading.requests import LimitOrderRequest, TakeProfitRequest, StopLossRequest, GetOrderByIdRequest, ReplaceOrderRequest, ClosePositionRequest
+from alpaca.trading.requests import LimitOrderRequest, TakeProfitRequest, StopLossRequest, GetOrderByIdRequest, ReplaceOrderRequest, ClosePositionRequest, TrailingStopOrderRequest
 from alpaca.trading.enums import OrderSide, OrderClass, OrderStatus, OrderType, TimeInForce
 
 from common_lib.alpaca_helpers.async_impl.trading_client import AsyncTradingClient
@@ -13,6 +13,10 @@ if settings.simulation:
 else:
     trading_client = AsyncTradingClient(settings.api_key, settings.api_secret)
 
+# TODO: change the order placing api to be more simple for the AI.
+# Support take profit or stop loss only, (bracket expects both)
+# Create separate tools for placing limit orders and stop orders.
+
 async def place_order(
     symbol: str,
     size: float,
@@ -20,12 +24,9 @@ async def place_order(
     price: float,
     take_profit: float | None = None,
     stop_loss: float | None = None,
-
 ) -> str:
     """
-    Place a limit order for a stock. Optionally include a take profit and stop loss to create a bracket order.
-    Stop loss and take profit must both be specified if one of them is provided.
-
+    Place a limit order for a stock. Optionally include a take profit and stop loss.
     Args:
         symbol: The symbol of the stock to place an order for
         size: The size of the order
@@ -48,7 +49,7 @@ async def place_order(
         side=side,
         limit_price=price,
         type=OrderType.LIMIT,
-        order_class=OrderClass.BRACKET if take_profit or stop_loss else OrderClass.SIMPLE,
+        order_class=OrderClass.BRACKET if (take_profit and stop_loss) else (OrderClass.OTO if take_profit or stop_loss else OrderClass.SIMPLE),
         time_in_force=TimeInForce.DAY,
     )
 
@@ -190,3 +191,86 @@ async def liquidate_position(symbol: str) -> str:
         return f"Position {symbol} was successfully liquidated."
     except Exception as e:
         return f"Failed to liquidate position {symbol}: {repr(e)}"
+
+
+async def place_trailing_stop(
+    symbol: str,
+    size: float,
+    buy_sell: str,
+    trail_percent: float | None = None,
+    trail_price: float | None = None,
+) -> str:
+    """
+    Place a trailing stop order. A trailing stop order is designed to protect gains by enabling a trade to remain open and continue to profit as long as the price is moving in the investor's favor
+
+    You must specify either trail_percent OR trail_price, but not both.
+
+    For a SELL trailing stop (protecting a long position):
+    - Using trail_percent:
+        - The stop price will trail the highest price by the trail_percent
+        - Example: If you buy at $100 with 5% trail_percent, and price goes to $120, your stop will be at $114 (5% below highest price)
+        - If price drops to $116, your stop will still be at $114 (it doesn't move down with the price)
+        - the initial stop price is (1 - trail_percent) * price_at_time_of_order, or 95$ in this example.
+    - Using trail_price:
+        - The stop price will trail the highest price by the fixed dollar amount
+        - Example: If you buy at $100 with $2 trail_price, and price goes to $120, your stop will be at $118 ($2 below highest price)
+        - the initial stop price is price_at_time_of_order - trail_price, or 98$ in this example.
+
+    For a BUY trailing stop (protecting a short position):
+    - Using trail_percent:
+        - The stop price will trail the lowest price by the trail_percent
+        - Example: If you short at $100 with 5% trail_percent, and price drops to $80, your stop will be at $84 (5% above lowest price)
+    - Using trail_price:
+        - The stop price will trail the lowest price by the fixed dollar amount
+        - Example: If you short at $100 with $2 trail_price, and price drops to $80, your stop will be at $82 ($2 above lowest price)
+
+    Args:
+        symbol: The symbol of the stock to place the trailing stop for
+        size: The number of shares
+        buy_sell: Either 'Buy' or 'Sell'. Use 'Buy' for covering shorts, 'Sell' for closing longs.
+        trail_percent: The percentage to trail by. Must be between 0.01 and 20.0. Cannot be used with trail_price.
+        trail_price: The fixed dollar amount to trail by. Must be > 0. Cannot be used with trail_percent.
+    """
+    if not is_market_open():
+        raise Exception("Market is not open")
+
+    if (trail_percent is None and trail_price is None) or (trail_percent is not None and trail_price is not None):
+        raise Exception("Must specify exactly one of trail_percent or trail_price")
+
+    if trail_percent is not None:
+        if trail_percent < 0.01 or trail_percent > 20.0:
+            raise Exception("Trail percent must be between 0.01 and 20.0")
+    else:  # trail_price is not None
+        if trail_price <= 0:
+            raise Exception("Trail price must be greater than 0")
+
+    if buy_sell.upper() == "BUY":
+        side = OrderSide.BUY
+    else:
+        side = OrderSide.SELL
+
+    order_request = TrailingStopOrderRequest(
+        symbol=symbol,
+        qty=size,
+        side=side,
+        trail_percent=trail_percent,
+        trail_price=trail_price,
+        time_in_force=TimeInForce.DAY,
+    )
+
+    submitted_order = await trading_client.submit_order(order_request)
+    retries = 5
+    while submitted_order.status in [
+        OrderStatus.PENDING_NEW,
+        OrderStatus.ACCEPTED_FOR_BIDDING,
+        OrderStatus.ACCEPTED,
+    ] and retries > 0:
+        retries -= 1
+        await asyncio.sleep(0.1)
+        submitted_order = await trading_client.get_order_by_id(submitted_order.id, GetOrderByIdRequest(nested=True))
+    
+    if submitted_order.status in [OrderStatus.PENDING_CANCEL, OrderStatus.CANCELED, OrderStatus.EXPIRED, OrderStatus.REJECTED, OrderStatus.STOPPED, OrderStatus.SUSPENDED, OrderStatus.PENDING_NEW]:
+        raise Exception(f"Trailing stop order failed to be placed: {submitted_order.status.value}")
+
+    trail_desc = f"{trail_percent}%" if trail_percent is not None else f"${trail_price}"
+    return f"Trailing stop order {submitted_order.id} successfully placed for {symbol} {size} {buy_sell} with {trail_desc} trail, order status: {submitted_order.status.value}"

@@ -5,7 +5,7 @@ from pytz import timezone
 
 
 def is_market_open():
-    now = datetime.now().astimezone(timezone("US/Eastern"))
+    now = get_current_market_time()
     return now.weekday() < 5 and (10 <= now.hour < 16 or now.hour == 9 and now.minute >= 30)
 
 

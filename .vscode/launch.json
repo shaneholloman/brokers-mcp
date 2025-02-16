@@ -5,16 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Current File",
+            "name": "Market Data Service",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "${workspaceFolder}/market_data_service/src/server.py",
             "console": "integratedTerminal",
             "env": {
                 "PYTHONPATH": "${workspaceFolder}",
                 "MCP_SERVERS_PATH": "/Users/iverkh/projects/portfolio_service",
                 "IBKR_CLIENT_ID": "4334",
-            }
+            },
+            "justMyCode": false
         }
     ]
 }
