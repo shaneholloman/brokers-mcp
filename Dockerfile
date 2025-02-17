@@ -1,5 +1,5 @@
 # Use a Python base image (version can be adjusted)
-FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim as builder
 
 # Set the working directory
 WORKDIR /app
@@ -30,3 +30,4 @@ EXPOSE 8003
 
 # Set the default command to run your script
 CMD ["./run_all_services.sh"]
+ 
