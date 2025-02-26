@@ -1,20 +1,16 @@
 from datetime import datetime, timedelta
-from alpaca.data.historical.news import NewsClient
-from alpaca.data import StockHistoricalDataClient
 from alpaca.data.requests import NewsRequest
+from common_lib.alpaca_helpers.async_impl.news_client import AsyncNewsClient
+from common_lib.mcp import get_current_market_time
 from mcp.server.fastmcp.resources import ResourceTemplate
 from common_lib.util import datetime_to_time_ago
-from common_lib.alpaca_helpers import AlpacaSettings
+from common_lib.alpaca_helpers.env import AlpacaSettings
 
 settings = AlpacaSettings()
-data_client = StockHistoricalDataClient(settings.api_key, settings.api_secret)
-news_client = NewsClient(settings.api_key, settings.api_secret)
+news_client = AsyncNewsClient(settings.api_key, settings.api_secret)
 
-# todo: this needs to be async
-def get_news(
-    symbols: str,
-    days_back: int = 1
-) -> str:
+
+async def get_news(symbols: str, days_back: int = 1) -> str:
     """
     Get news for a list of symbols, separated by commas
 
@@ -27,12 +23,12 @@ def get_news(
     """
     request = NewsRequest(
         symbols=symbols,
-        start=datetime.now() - timedelta(days=days_back),
-        end=datetime.now(),
-        sort="asc"
+        start=get_current_market_time() - timedelta(days=days_back),
+        end=get_current_market_time(),
+        sort="asc",
     )
     all_news = []
-    news = news_client.get_news(request)
+    news = await news_client.get_news(request)
     all_news.extend(news.data["news"])
     while news.next_page_token:
         request.next_page_token = news.next_page_token
@@ -44,20 +40,24 @@ def get_news(
         when = datetime_to_time_ago(news_item.updated_at)
         news_string += f"*{news_item.headline}*\n{when}\n{news_item.summary}\n\n"
 
-    return news_string
+    return news_string or "No news found"
 
-def latest_headline(symbol: str) -> str:
+
+async def latest_headline(symbol: str) -> str:
+    market_time = get_current_market_time()
+
     request = NewsRequest(
         symbols=symbol,
-        start=datetime.now() - timedelta(hours=4),
-        end=datetime.now(),
-        sort="desc"
+        start=market_time - timedelta(hours=4),
+        end=market_time,
+        sort="desc",
     )
-    news_items = news_client.get_news(request).data["news"]
+    news_items = (await news_client.get_news(request)).data["news"]
     if len(news_items) == 0:
         return "No headline from the past 4 hours"
-    
+
     return f"*{news_items[0].headline}*\n{datetime_to_time_ago(news_items[0].updated_at)}"
+
 
 latest_headline_resource = ResourceTemplate(
     uri_template="news://latest_headline/{symbol}",
@@ -68,8 +68,7 @@ latest_headline_resource = ResourceTemplate(
         "symbol": {
             "type": "string",
             "description": "The symbol to get the latest headline for",
-            "required": True
+            "required": True,
         }
-    }
+    },
 )
-

@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "A Model Context Protocol server providing IBKR brokerage access"
 requires-python = ">=3.10"
 dependencies = [
- "common"
+    "common",
+    "sqlalchemy>=2.0.37",
+    "aiosqlite>=0.20.0",
+    "greenlet>=3.1.1",
 ]
 
 [[project.authors]]
