@@ -18,13 +18,31 @@ from mcp.server.fastmcp import Image
 settings = AlpacaSettings()
 stock_client = AsyncStockHistoricalDataClient(settings.api_key, settings.api_secret)
 
-SUPPORTED_INDICATORS = [
-    "sma_{period}",
-    "ema_{period}",
-    "rsi_{window_period}",
-    "macd_{fast_period}_{slow_period}_{signal_period}",
-    "bbands_{window_period}_{num_std}",
-]
+SUPPORTED_INDICATORS = {
+    "sma_{period}": {
+        "df_columns": ["sma_{period}"]
+    },
+    "ema_{period}": {
+        "df_columns": ["ema_{period}"]
+    },
+    "rsi_{window_period}": {
+        "df_columns": ["rsi_{window_period}"]
+    },
+    "macd_{fast_period}_{slow_period}_{signal_period}": {
+        "df_columns": [
+            "macd_{fast_period}_{slow_period}_{signal_period}",
+            "macd_signal_{fast_period}_{slow_period}_{signal_period}",
+            "macd_histogram_{fast_period}_{slow_period}_{signal_period}"
+        ]
+    },
+    "bbands_{window_period}_{num_std}": {
+        "df_columns": [
+            "bb_upper_{window_period}_{num_std}",
+            "bb_middle_{window_period}_{num_std}",
+            "bb_lower_{window_period}_{num_std}"
+        ]
+    }
+}
 
 logger = logging.getLogger(__name__)
 

@@ -35,7 +35,7 @@ mcp.add_tool(
         indicators: Optional indicators to plot, comma-separated. Supported: {SUPPORTED_INDICATORS}
     
     Returns:
-        str: bars data as a json records
+        str: json records with lines=true
     """,
 )
 
@@ -57,7 +57,7 @@ mcp.add_tool(
         indicators: Optional indicators to plot, comma-separated. Supported: {SUPPORTED_INDICATORS}
     
     Returns:
-        A candlestick chart with indicators (if given) and the bars data
+        A tuple of (Image, str) where the first element is the chart image and the second element is the bars (and indicators) data in json records with lines=true
     """,
 )
 mcp.add_tool(get_news)
